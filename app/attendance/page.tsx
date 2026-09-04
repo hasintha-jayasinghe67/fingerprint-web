@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { apiUrl } from "@/lib/api";
+import SiteHeader from "@/components/site-header";
 
 // -------------------------------------------------------
 // Types
@@ -62,7 +62,6 @@ function getRelativeLabel(dateStr: string): string {
 // -------------------------------------------------------
 
 export default function AttendanceDatesPage() {
-  const router = useRouter();
   const [dates, setDates] = useState<AttendanceDate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -90,55 +89,42 @@ export default function AttendanceDatesPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
-      {/* Header */}
-      <header className="border-b border-slate-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => router.push("/")}
-                className="w-9 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors"
-              >
-                ←
-              </button>
-              <div>
-                <h1 className="text-xl font-bold text-slate-900">
-                  Attendance Records
-                </h1>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <Link
-                href="/prefects"
-                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200 hover:bg-purple-200 transition-all active:scale-95"
-              >
-                Prefects
-              </Link>
-              <Link
-                href="/gate-sheet"
-                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-all active:scale-95"
-              >
-                Gate Sheet
-              </Link>
-              <Link
-                href="/settings"
-                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-all active:scale-95"
-              >
-                ⚙ Settings
-              </Link>
-              <button
-                onClick={() => {
-                  setLoading(true);
-                  fetchData();
-                }}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 transition-all active:scale-95"
-              >
-                ↻ Refresh
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <SiteHeader
+        title="Attendance Records"
+        backTo="/"
+        maxWidth="5xl"
+        actions={
+          <>
+            <Link
+              href="/prefects"
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200 hover:bg-purple-200 transition-all active:scale-95"
+            >
+              Prefects
+            </Link>
+            <Link
+              href="/gate-sheet"
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-all active:scale-95"
+            >
+              Gate Sheet
+            </Link>
+            <Link
+              href="/settings"
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-all active:scale-95"
+            >
+              ⚙ Settings
+            </Link>
+            <button
+              onClick={() => {
+                setLoading(true);
+                fetchData();
+              }}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 transition-all active:scale-95"
+            >
+              ↻ Refresh
+            </button>
+          </>
+        }
+      />
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Loading */}

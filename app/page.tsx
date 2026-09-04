@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { apiUrl } from "@/lib/api";
+import SiteHeader from "@/components/site-header";
 
 // -------------------------------------------------------
 // Types
@@ -212,88 +213,77 @@ export default function AttendancePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
-      {/* Header */}
-      <header className="border-b border-slate-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div>
-                <h1 className="text-xl font-bold text-slate-900">
-                  House Prefect Affairs
-                </h1>
-              </div>
+      <SiteHeader
+        title="House Prefect Affairs"
+        actions={
+          <>
+            <div className="hidden md:block text-right shrink-0">
+              <p className="text-xs text-slate-400 uppercase tracking-wider">
+                Sri Lanka Time
+              </p>
+              <p className="text-sm font-mono font-semibold text-slate-700">
+                {serverTime || "--:--:-- --"}
+              </p>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <p className="text-xs text-slate-400 uppercase tracking-wider">
-                  Sri Lanka Time
-                </p>
-                <p className="text-sm font-mono font-semibold text-slate-700">
-                  {serverTime || "--:--:-- --"}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Link
-                  href="/attendance"
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-100 text-indigo-700 border border-indigo-200 hover:bg-indigo-200 transition-all active:scale-95"
-                >
-                  Attendance
-                </Link>
-                <Link
-                  href="/prefects"
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200 hover:bg-purple-200 transition-all active:scale-95"
-                >
-                  Prefects
-                </Link>
-                <Link
-                  href="/gate-sheet"
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-all active:scale-95"
-                >
-                  Gate Sheet
-                </Link>
-                <Link
-                  href="/settings"
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-all active:scale-95"
-                >
-                  ⚙ Settings
-                </Link>
-                <Link
-                  href="/prefects/add"
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-600 text-white hover:bg-purple-700 transition-all active:scale-95"
-                >
-                  + Add
-                </Link>
-                <button
-                  onClick={() => {
-                    setNoticeOpen(true);
-                    setNoticeResult(null);
-                    setNoticeMessage("");
-                  }}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-100 text-amber-700 border border-amber-200 hover:bg-amber-200 transition-all active:scale-95"
-                >
-                  Send Notice
-                </button>
-                <button
-                  onClick={() => setAutoRefresh(!autoRefresh)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                    autoRefresh
-                      ? "bg-green-100 text-green-700 border border-green-200 hover:bg-green-200"
-                      : "bg-slate-100 text-slate-500 border border-slate-200 hover:bg-slate-200"
-                  }`}
-                >
-                  {autoRefresh ? "● Auto-refresh ON" : "○ Auto-refresh OFF"}
-                </button>
-                <button
-                  onClick={fetchData}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 transition-all active:scale-95"
-                >
-                  ↻ Refresh
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+            <Link
+              href="/attendance"
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-100 text-indigo-700 border border-indigo-200 hover:bg-indigo-200 transition-all active:scale-95"
+            >
+              Attendance
+            </Link>
+            <Link
+              href="/prefects"
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200 hover:bg-purple-200 transition-all active:scale-95"
+            >
+              Prefects
+            </Link>
+            <Link
+              href="/gate-sheet"
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-all active:scale-95"
+            >
+              Gate Sheet
+            </Link>
+            <Link
+              href="/settings"
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-all active:scale-95"
+            >
+              ⚙ Settings
+            </Link>
+            <Link
+              href="/prefects/add"
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-600 text-white hover:bg-purple-700 transition-all active:scale-95"
+            >
+              + Add
+            </Link>
+            <button
+              onClick={() => {
+                setNoticeOpen(true);
+                setNoticeResult(null);
+                setNoticeMessage("");
+              }}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-100 text-amber-700 border border-amber-200 hover:bg-amber-200 transition-all active:scale-95"
+            >
+              Send Notice
+            </button>
+            <button
+              onClick={() => setAutoRefresh(!autoRefresh)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                autoRefresh
+                  ? "bg-green-100 text-green-700 border border-green-200 hover:bg-green-200"
+                  : "bg-slate-100 text-slate-500 border border-slate-200 hover:bg-slate-200"
+              }`}
+            >
+              {autoRefresh ? "● Auto-refresh ON" : "○ Auto-refresh OFF"}
+            </button>
+            <button
+              onClick={fetchData}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 transition-all active:scale-95"
+            >
+              ↻ Refresh
+            </button>
+          </>
+        }
+      />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Date Banner */}
@@ -376,7 +366,7 @@ export default function AttendancePage() {
         {/* Attendance Table */}
         {events.length > 0 && (
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <div className="px-6 py-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2">
               <h3 className="font-semibold text-slate-800">
                 Attendance Log ({events.length} records)
               </h3>
@@ -397,7 +387,7 @@ export default function AttendancePage() {
               <table className="w-full">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200">
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">
                       #
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
@@ -409,10 +399,10 @@ export default function AttendancePage() {
                     <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider hidden lg:table-cell">
                       Verification
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider hidden lg:table-cell">
                       Device SN
                     </th>
                   </tr>
@@ -423,7 +413,7 @@ export default function AttendancePage() {
                       key={`${event.pin}-${event.timestamp}-${idx}`}
                       className="hover:bg-slate-50/50 transition-colors"
                     >
-                      <td className="px-6 py-3.5 text-sm text-slate-400 font-mono">
+                      <td className="px-6 py-3.5 text-sm text-slate-400 font-mono hidden md:table-cell">
                         {idx + 1}
                       </td>
                       <td className="px-6 py-3.5">
@@ -465,12 +455,12 @@ export default function AttendancePage() {
                           {getStatusLabel(event.status)}
                         </span>
                       </td>
-                      <td className="px-6 py-3.5">
+                      <td className="px-6 py-3.5 hidden lg:table-cell">
                         <span className="inline-flex items-center gap-1.5 text-sm text-slate-600">
                           {getVerifyLabel(event.verifyMethod)}
                         </span>
                       </td>
-                      <td className="px-6 py-3.5 text-xs text-slate-400 font-mono">
+                      <td className="px-6 py-3.5 text-xs text-slate-400 font-mono hidden lg:table-cell">
                         {event.deviceSN}
                       </td>
                     </tr>

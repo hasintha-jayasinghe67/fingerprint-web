@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { apiUrl } from "@/lib/api";
+import SiteHeader from "@/components/site-header";
 
 const DAYS = [
   { key: 1, label: "Monday" },
@@ -25,7 +25,6 @@ interface GateRow {
 }
 
 export default function GateSheetPage() {
-  const router = useRouter();
   const [rows, setRows] = useState<GateRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -108,58 +107,44 @@ export default function GateSheetPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
-      {/* Header */}
-      <header className="border-b border-slate-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => router.push("/")}
-                className="w-9 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors"
-              >
-                ←
-              </button>
-              <div>
-                <h1 className="text-xl font-bold text-slate-900">Gate Sheet</h1>
-                <p className="text-xs text-slate-500">
-                  Weekly gate duty roster — Mon to Fri
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <Link
-                href="/attendance"
-                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-all active:scale-95"
-              >
-                Attendance
-              </Link>
-              <Link
-                href="/prefects"
-                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200 hover:bg-purple-200 transition-all active:scale-95"
-              >
-                Prefects
-              </Link>
-              <Link
-                href="/settings"
-                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-all active:scale-95"
-              >
-                ⚙ Settings
-              </Link>
-              <button
-                onClick={handleSave}
-                disabled={saving || !dirty}
-                className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all active:scale-95 ${
-                  dirty
-                    ? "bg-blue-600 text-white hover:bg-blue-700"
-                    : "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed"
-                }`}
-              >
-                {saving ? "Saving…" : dirty ? "💾 Save changes" : "✓ Saved"}
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <SiteHeader
+        title="Gate Sheet"
+        subtitle="Weekly gate duty roster — Mon to Fri"
+        backTo="/"
+        actions={
+          <>
+            <Link
+              href="/attendance"
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-all active:scale-95"
+            >
+              Attendance
+            </Link>
+            <Link
+              href="/prefects"
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200 hover:bg-purple-200 transition-all active:scale-95"
+            >
+              Prefects
+            </Link>
+            <Link
+              href="/settings"
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-all active:scale-95"
+            >
+              ⚙ Settings
+            </Link>
+            <button
+              onClick={handleSave}
+              disabled={saving || !dirty}
+              className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all active:scale-95 ${
+                dirty
+                  ? "bg-blue-600 text-white hover:bg-blue-700"
+                  : "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed"
+              }`}
+            >
+              {saving ? "Saving…" : dirty ? "💾 Save changes" : "✓ Saved"}
+            </button>
+          </>
+        }
+      />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Status */}
@@ -225,12 +210,16 @@ export default function GateSheetPage() {
         {/* Grid */}
         {!loading && rows.length > 0 && (
           <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-            <table className="w-full text-sm">
+            {/* border-separate + min-width so the roster scrolls horizontally
+                on phones while the prefect name stays pinned on the left. */}
+            <table className="w-full text-sm border-separate border-spacing-0 min-w-[640px]">
               <thead>
                 <tr className="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500">
-                  <th className="px-4 py-3">House Prefect</th>
+                  <th className="px-4 py-3 sticky left-0 z-10 bg-slate-50 border-b border-slate-200 border-r border-slate-200">
+                    House Prefect
+                  </th>
                   {DAYS.map((d) => (
-                    <th key={d.key} className="px-4 py-3 text-center">
+                    <th key={d.key} className="px-4 py-3 text-center border-b border-slate-200">
                       {d.label}
                     </th>
                   ))}
@@ -238,11 +227,8 @@ export default function GateSheetPage() {
               </thead>
               <tbody>
                 {rows.map((r) => (
-                  <tr
-                    key={r.prefectId}
-                    className="border-t border-slate-100 hover:bg-slate-50/50"
-                  >
-                    <td className="px-4 py-2.5">
+                  <tr key={r.prefectId} className="hover:bg-slate-50/50">
+                    <td className="px-4 py-2.5 sticky left-0 z-[1] bg-white border-b border-slate-100 border-r border-slate-200">
                       <p className="font-medium text-slate-800">{r.name}</p>
                       <p className="text-xs text-slate-400">
                         {r.class || "—"}
@@ -254,13 +240,13 @@ export default function GateSheetPage() {
                       </p>
                     </td>
                     {DAYS.map((d) => (
-                      <td key={d.key} className="px-3 py-2.5 text-center">
+                      <td key={d.key} className="px-3 py-2.5 text-center border-b border-slate-100">
                         <select
                           value={r.days[d.key] || ""}
                           onChange={(e) =>
                             setCell(r.prefectId, d.key, e.target.value)
                           }
-                          className={`rounded-lg border px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-colors ${
+                          className={`rounded-lg border px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-colors ${
                             r.days[d.key]
                               ? "border-indigo-300 bg-indigo-50 font-medium text-indigo-700 focus:border-indigo-400"
                               : "border-slate-200 bg-white text-slate-700 focus:border-indigo-400"

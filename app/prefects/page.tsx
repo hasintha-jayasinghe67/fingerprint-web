@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { apiUrl } from "@/lib/api";
+import SiteHeader from "@/components/site-header";
 
 // -------------------------------------------------------
 // Types
@@ -24,7 +24,6 @@ interface Prefect {
 // -------------------------------------------------------
 
 export default function PrefectsPage() {
-  const router = useRouter();
   const [prefects, setPrefects] = useState<Prefect[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -167,35 +166,21 @@ export default function PrefectsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
-      {/* Header */}
-      <header className="border-b border-slate-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => router.push("/")}
-                className="w-9 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors"
-              >
-                ←
-              </button>
-              <div>
-                <h1 className="text-xl font-bold text-slate-900">
-                  House Prefects
-                </h1>
-                <p className="text-xs text-slate-500">
-                  Register, edit and manage house prefects
-                </p>
-              </div>
-            </div>
-            <Link
-              href="/prefects/add"
-              className="px-4 py-2 rounded-xl bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700 transition-all active:scale-[0.98]"
-            >
-              + Add Prefect
-            </Link>
-          </div>
-        </div>
-      </header>
+      <SiteHeader
+        title="House Prefects"
+        subtitle="Register, edit and manage house prefects"
+        backTo="/"
+        maxWidth="5xl"
+        actionsLayout="wrap"
+        actions={
+          <Link
+            href="/prefects/add"
+            className="px-4 py-2 rounded-xl bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700 transition-all active:scale-[0.98]"
+          >
+            + Add Prefect
+          </Link>
+        }
+      />
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Feedback toast */}
@@ -250,10 +235,10 @@ export default function PrefectsPage() {
               <table className="w-full">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200">
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">#</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">#</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Class</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Code</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">Class</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider hidden lg:table-cell">Code</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">PIN</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Device Status</th>
                     <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
@@ -262,7 +247,7 @@ export default function PrefectsPage() {
                 <tbody className="divide-y divide-slate-100">
                   {prefects.map((p, idx) => (
                     <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="px-6 py-3.5 text-sm text-slate-400 font-mono">{idx + 1}</td>
+                      <td className="px-6 py-3.5 text-sm text-slate-400 font-mono hidden md:table-cell">{idx + 1}</td>
                       <td className="px-6 py-3.5">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
@@ -271,10 +256,10 @@ export default function PrefectsPage() {
                           <span className="text-sm font-semibold text-slate-800">{p.name}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-3.5 text-sm text-slate-600">
+                      <td className="px-6 py-3.5 text-sm text-slate-600 hidden md:table-cell">
                         {p.class || "—"}
                       </td>
-                      <td className="px-6 py-3.5 text-sm text-slate-600 font-mono">
+                      <td className="px-6 py-3.5 text-sm text-slate-600 font-mono hidden lg:table-cell">
                         {p.code || "—"}
                       </td>
                       <td className="px-6 py-3.5 text-sm font-mono font-semibold text-slate-700">

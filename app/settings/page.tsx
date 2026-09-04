@@ -1,16 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { apiUrl } from "@/lib/api";
+import SiteHeader from "@/components/site-header";
 
 // -------------------------------------------------------
 // Main Component
 // -------------------------------------------------------
 
 export default function SettingsPage() {
-  const router = useRouter();
-
   const [loading, setLoading] = useState(true);
   const [morningSigninTime, setMorningSigninTime] = useState("07:30");
   const [saving, setSaving] = useState(false);
@@ -69,22 +67,7 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
-      {/* Header */}
-      <header className="border-b border-slate-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => router.back()}
-              className="w-9 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors"
-            >
-              ←
-            </button>
-            <div>
-              <h1 className="text-xl font-bold text-slate-900">Settings</h1>
-            </div>
-          </div>
-        </div>
-      </header>
+      <SiteHeader title="Settings" backTo="back" maxWidth="3xl" />
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
