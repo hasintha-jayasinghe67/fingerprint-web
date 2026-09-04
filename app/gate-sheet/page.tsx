@@ -183,13 +183,13 @@ export default function GateSheetPage() {
             Assignments:
           </span>
           <span className="px-2 py-1 rounded-md bg-indigo-50 border border-indigo-100 text-indigo-700">
-            MG — Morning Gate
+            MG — Main Gate
           </span>
           <span className="px-2 py-1 rounded-md bg-purple-50 border border-purple-100 text-purple-700">
-            PG — Post Gate
+            PG — Pool Gate
           </span>
           <span className="px-2 py-1 rounded-md bg-teal-50 border border-teal-100 text-teal-700">
-            PBG — Pre-Break Gate
+            PBG — Palm Beach Gate
           </span>
           <span className="ml-auto">
             {rows.length} prefects · {assignedCount} assignments
