@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { apiUrl } from "@/lib/api";
 
 const DAYS = [
   { key: 1, label: "Monday" },
@@ -36,7 +37,7 @@ export default function GateSheetPage() {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/gate-sheet");
+      const res = await fetch(apiUrl("/api/gate-sheet"));
       if (!res.ok) throw new Error("Failed to load gate sheet");
       const data = await res.json();
       setRows(data.rows || []);
@@ -73,7 +74,7 @@ export default function GateSheetPage() {
         prefectId: r.prefectId,
         days: r.days,
       }));
-      const res = await fetch("/api/gate-sheet", {
+      const res = await fetch(apiUrl("/api/gate-sheet"), {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ rows: payload }),

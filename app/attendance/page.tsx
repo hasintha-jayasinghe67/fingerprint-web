@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { apiUrl } from "@/lib/api";
 
 // -------------------------------------------------------
 // Types
@@ -71,7 +72,7 @@ export default function AttendanceDatesPage() {
       setLoading(true);
       setError(null);
 
-      const res = await fetch("/api/attendance/dates");
+      const res = await fetch(apiUrl("/api/attendance/dates"));
       if (!res.ok) throw new Error("Failed to fetch attendance dates");
 
       const data = await res.json();

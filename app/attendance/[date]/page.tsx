@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { apiUrl } from "@/lib/api";
 
 // -------------------------------------------------------
 // Types
@@ -116,7 +117,7 @@ export default function AttendanceDateDetailPage() {
       setLoading(true);
       setError(null);
 
-      const res = await fetch(`/api/attendance/date/${date}`);
+      const res = await fetch(apiUrl(`/api/attendance/date/${date}`));
       if (!res.ok) throw new Error("Failed to fetch attendance records");
 
       const json = await res.json();
@@ -155,7 +156,7 @@ export default function AttendanceDateDetailPage() {
           "Present",
       }));
 
-      const res = await fetch(`/api/gate-attendance/${data.date}`, {
+      const res = await fetch(apiUrl(`/api/gate-attendance/${data.date}`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ entries }),

@@ -20,19 +20,21 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 ## Backend API
 
-The app proxies all `/api/*` requests to a backend server. By default it points
-at `http://localhost:8088`. To deploy against a different backend, set the
-`BACKEND_API_URL` environment variable (copy `.env.example` to `.env.local` for
-local overrides):
+The app calls `<BACKEND_API_URL>/api/*` directly from the browser (see
+`lib/api.ts`); the relative `/api/*` rewrite in `next.config.ts` is kept as a
+fallback for local development. The backend origin is read from the required
+`BACKEND_API_URL` environment variable — there is no hardcoded default, so the
+app refuses to start without it. Copy `.env.example` to `.env.local` and set
+the value for local development:
 
 ```bash
-BACKEND_API_URL=https://api.example.com npm run dev
+BACKEND_API_URL=http://localhost:8088 npm run dev
 ```
 
-The value is read when the Next.js config is evaluated, so set it on the
-process that runs the app — restart `npm run dev` after changing it, and for
-`next build` + `next start` deployments make sure it is present at build time
-(Vercel/Netlify: set it as a build environment variable).
+The value is inlined into the client bundle at build time, so it must be set
+when the app is built (Vercel/Netlify: build environment variable). Because
+the browser calls the backend directly, the backend must be reachable from
+users' browsers and must allow CORS requests from the frontend origin.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { apiUrl } from "@/lib/api";
 
 // -------------------------------------------------------
 // Main Component
@@ -20,7 +21,7 @@ export default function SettingsPage() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/settings");
+        const res = await fetch(apiUrl("/api/settings"));
         if (!res.ok) throw new Error("Failed to load settings");
         const data = await res.json();
         if (!cancelled) {
@@ -44,7 +45,7 @@ export default function SettingsPage() {
     setSaved(false);
     setError(null);
     try {
-      const res = await fetch("/api/settings", {
+      const res = await fetch(apiUrl("/api/settings"), {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ morningSigninTime }),

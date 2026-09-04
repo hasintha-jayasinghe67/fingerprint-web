@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { apiUrl } from "@/lib/api";
 
 // -------------------------------------------------------
 // Types
@@ -149,9 +150,9 @@ export default function AttendancePage() {
       setError(null);
 
       const [attRes, devRes, setRes] = await Promise.all([
-        fetch(`/api/attendance?date=${todayISO}`),
-        fetch("/api/devices"),
-        fetch("/api/settings"),
+        fetch(apiUrl(`/api/attendance?date=${todayISO}`)),
+        fetch(apiUrl("/api/devices")),
+        fetch(apiUrl("/api/settings")),
       ]);
 
       if (!attRes.ok) throw new Error("Failed to fetch attendance");
@@ -600,7 +601,7 @@ export default function AttendancePage() {
                           if (!noticeMessage.trim()) return;
                           setNoticeSending(true);
                           try {
-                            const res = await fetch("/api/sms", {
+                            const res = await fetch(apiUrl("/api/sms"), {
                               method: "POST",
                               headers: { "Content-Type": "application/json" },
                               body: JSON.stringify({ message: noticeMessage.trim() }),

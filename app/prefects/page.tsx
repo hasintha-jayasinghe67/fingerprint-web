@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { apiUrl } from "@/lib/api";
 
 // -------------------------------------------------------
 // Types
@@ -40,7 +41,7 @@ export default function PrefectsPage() {
 
   const fetchPrefects = useCallback(async () => {
     try {
-      const res = await fetch("/api/prefects");
+      const res = await fetch(apiUrl("/api/prefects"));
       if (res.ok) {
         const data = await res.json();
         setPrefects(data.prefects);
@@ -67,7 +68,7 @@ export default function PrefectsPage() {
         return;
       }
       try {
-        const res = await fetch("/api/prefects");
+        const res = await fetch(apiUrl("/api/prefects"));
         if (!res.ok) return;
         const data = await res.json();
         const list: Prefect[] = data.prefects || [];
@@ -89,7 +90,7 @@ export default function PrefectsPage() {
     setRegisteringId(id);
     setFeedback(null);
     try {
-      const res = await fetch(`/api/prefects/${id}/register-device`, { method: "POST" });
+      const res = await fetch(apiUrl(`/api/prefects/${id}/register-device`), { method: "POST" });
       const data = await res.json();
       setFeedback({ id, msg: res.ok ? data.message : data.error, ok: res.ok });
       if (res.ok) {
@@ -122,7 +123,7 @@ export default function PrefectsPage() {
     setEditSaving(true);
     setEditError(null);
     try {
-      const res = await fetch(`/api/prefects/${editing.id}`, {
+      const res = await fetch(apiUrl(`/api/prefects/${editing.id}`), {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: editName, class: editClass, code: editCode }),
@@ -150,7 +151,7 @@ export default function PrefectsPage() {
     }
     setDeletingId(id);
     try {
-      const res = await fetch(`/api/prefects/${id}`, { method: "DELETE" });
+      const res = await fetch(apiUrl(`/api/prefects/${id}`), { method: "DELETE" });
       if (res.ok) {
         setPrefects((prev) => prev.filter((p) => p.id !== id));
         setFeedback({ id, msg: "Prefect deleted.", ok: true });

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { apiUrl } from "@/lib/api";
 
 // -------------------------------------------------------
 // Types
@@ -45,7 +46,7 @@ export default function AddPrefectPage() {
 
   const fetchPrefects = useCallback(async () => {
     try {
-      const res = await fetch("/api/prefects");
+      const res = await fetch(apiUrl("/api/prefects"));
       if (res.ok) {
         const data = await res.json();
         setPrefects(data.prefects);
@@ -79,7 +80,7 @@ export default function AddPrefectPage() {
         return;
       }
       try {
-        const res = await fetch("/api/prefects");
+        const res = await fetch(apiUrl("/api/prefects"));
         if (!res.ok) return;
         const list: Prefect[] = (await res.json()).prefects || [];
         setPrefects(list);
@@ -110,7 +111,7 @@ export default function AddPrefectPage() {
     setError(null);
 
     try {
-      const res = await fetch("/api/prefects", {
+      const res = await fetch(apiUrl("/api/prefects"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -151,7 +152,7 @@ export default function AddPrefectPage() {
     setRegisterError(null);
 
     try {
-      const res = await fetch(`/api/prefects/${prefectId}/register-device`, {
+      const res = await fetch(apiUrl(`/api/prefects/${prefectId}/register-device`), {
         method: "POST",
       });
 
@@ -180,7 +181,7 @@ export default function AddPrefectPage() {
   async function handleDelete(id: number) {
     setDeletingId(id);
     try {
-      const res = await fetch(`/api/prefects/${id}`, { method: "DELETE" });
+      const res = await fetch(apiUrl(`/api/prefects/${id}`), { method: "DELETE" });
       if (res.ok) {
         setPrefects((prev) => prev.filter((p) => p.id !== id));
         if (created?.id === id) setCreated(null);
