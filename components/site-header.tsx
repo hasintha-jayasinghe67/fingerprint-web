@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
+import { logout } from "@/app/login/actions";
 
 interface SiteHeaderProps {
   title: string;
@@ -32,6 +33,16 @@ export default function SiteHeader({
   const [menuOpen, setMenuOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+
+  const logoutButton = (
+    <button
+      onClick={() => logout()}
+      title="Sign out"
+      className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white text-slate-600 border border-slate-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors active:scale-95 shrink-0"
+    >
+      Log out
+    </button>
+  );
 
   // Close the menu on outside click / Escape. A plain outside-click handler
   // is used instead of a fixed backdrop because the header's backdrop-blur
@@ -95,38 +106,45 @@ export default function SiteHeader({
           </div>
 
           {/* Right: actions */}
-          {actions &&
-            (actionsLayout === "wrap" ? (
-              <div className="flex items-center gap-2 flex-wrap justify-end shrink-0">
-                {actions}
-              </div>
-            ) : (
-              <>
-                <div className="hidden md:flex items-center gap-2 flex-wrap justify-end">
+          <div className="flex items-center gap-2 justify-end min-w-0 shrink-0">
+            {actions &&
+              (actionsLayout === "wrap" ? (
+                <div className="flex items-center gap-2 flex-wrap justify-end">
                   {actions}
                 </div>
-                <div className="md:hidden relative shrink-0">
-                  <button
-                    ref={buttonRef}
-                    onClick={() => setMenuOpen((v) => !v)}
-                    aria-label="Toggle menu"
-                    aria-expanded={menuOpen}
-                    className="w-9 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors active:scale-95"
-                  >
-                    {menuOpen ? "✕" : "☰"}
-                  </button>
-                  {menuOpen && (
-                    <div
-                      ref={panelRef}
-                      onClick={() => setMenuOpen(false)}
-                      className="absolute right-0 top-full mt-2 z-30 w-60 max-h-[70vh] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-xl flex flex-col gap-1.5 [&>*]:w-full [&>*]:justify-center"
+              ) : (
+                <>
+                  <div className="hidden md:flex items-center gap-2 flex-wrap justify-end">
+                    {actions}
+                  </div>
+                  <div className="md:hidden relative shrink-0">
+                    <button
+                      ref={buttonRef}
+                      onClick={() => setMenuOpen((v) => !v)}
+                      aria-label="Toggle menu"
+                      aria-expanded={menuOpen}
+                      className="w-9 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors active:scale-95"
                     >
-                      {actions}
-                    </div>
-                  )}
-                </div>
-              </>
-            ))}
+                      {menuOpen ? "✕" : "☰"}
+                    </button>
+                    {menuOpen && (
+                      <div
+                        ref={panelRef}
+                        onClick={() => setMenuOpen(false)}
+                        className="absolute right-0 top-full mt-2 z-30 w-60 max-h-[70vh] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-xl flex flex-col gap-1.5 [&>*]:w-full [&>*]:justify-center"
+                      >
+                        {actions}
+                        {logoutButton}
+                      </div>
+                    )}
+                  </div>
+                </>
+              ))}
+            {actions && actionsLayout !== "wrap" && (
+              <div className="hidden md:block">{logoutButton}</div>
+            )}
+            {(!actions || actionsLayout === "wrap") && logoutButton}
+          </div>
         </div>
       </div>
     </header>
