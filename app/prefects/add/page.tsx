@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { apiUrl } from "@/lib/api";
 import SiteHeader from "@/components/site-header";
+import { IconClose } from "@/components/icons";
 
 // -------------------------------------------------------
 // Types
@@ -194,7 +195,7 @@ export default function AddPrefectPage() {
   // -------------------------------------------------------
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
+    <div className="min-h-screen">
       <SiteHeader title="Add House Prefect" backTo="/" maxWidth="5xl" />
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -203,18 +204,18 @@ export default function AddPrefectPage() {
           <div>
             {/* Success card */}
             {created && (
-              <div className="mb-6 bg-emerald-50 border border-emerald-200 rounded-2xl p-6">
+              <div className="mb-6 bg-emerald-50 border border-emerald-200 rounded-lg p-6">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-semibold text-emerald-800">
                     Prefect Created
                   </h3>
                   {created.registered && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-600 text-white">
-                      ✓ Enrolled
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-600 text-white">
+                      Enrolled
                     </span>
                   )}
                 </div>
-                <div className="space-y-2 text-sm text-emerald-700 mb-4">
+                <div className="space-y-2 text-sm text-emerald-800 mb-4">
                   <p>
                     <strong>Name:</strong> {created.name}
                   </p>
@@ -230,7 +231,7 @@ export default function AddPrefectPage() {
                   )}
                   <p>
                     <strong>PIN:</strong>{" "}
-                    <span className="font-mono bg-emerald-100 px-2 py-0.5 rounded">
+                    <span className="font-mono bg-white px-2 py-0.5 rounded">
                       {created.pin}
                     </span>
                   </p>
@@ -239,7 +240,7 @@ export default function AddPrefectPage() {
                 {/* Device registration status */}
                 {registerResult && (
                   <div
-                    className={`p-3 rounded-xl text-sm mb-3 flex items-start gap-2 ${
+                    className={`p-3 rounded-md text-sm mb-3 flex items-start gap-2 ${
                       created.registered
                         ? "bg-emerald-600 text-white"
                         : "bg-emerald-100 text-emerald-800"
@@ -252,7 +253,7 @@ export default function AddPrefectPage() {
                   </div>
                 )}
                 {registerError && (
-                  <div className="p-3 bg-red-100 rounded-xl text-sm text-red-700 mb-3">
+                  <div className="p-3 bg-red-100 rounded-md text-sm text-red-700 mb-3">
                     {registerError}
                   </div>
                 )}
@@ -262,7 +263,7 @@ export default function AddPrefectPage() {
                     <button
                       onClick={() => handleRegisterDevice(created.id)}
                       disabled={registering || registrationDone}
-                      className="flex-1 px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
+                      className="flex-1 px-4 py-2.5 rounded-md bg-slate-800 text-white text-sm font-semibold hover:bg-slate-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       {registering || registrationDone ? (
                         <span className="flex items-center justify-center gap-2">
@@ -276,7 +277,7 @@ export default function AddPrefectPage() {
                   )}
                   <button
                     onClick={() => setCreated(null)}
-                    className="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-600 text-sm font-semibold hover:bg-slate-200 transition-all"
+                    className="px-4 py-2.5 rounded-md bg-white border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-50 transition-colors"
                   >
                     Dismiss
                   </button>
@@ -285,13 +286,13 @@ export default function AddPrefectPage() {
             )}
 
             {/* Registration form */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-              <h2 className="text-lg font-semibold text-slate-800 mb-4">
+            <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+              <h2 className="text-lg font-semibold tracking-tight text-slate-800 mb-4">
                 New Prefect Details
               </h2>
 
               {error && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
                   {error}
                 </div>
               )}
@@ -311,7 +312,7 @@ export default function AddPrefectPage() {
                     onChange={(e) => setName(e.target.value)}
                     required
                     placeholder="e.g. H. Perera"
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    className="w-full px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-colors"
                   />
                 </div>
 
@@ -329,7 +330,7 @@ export default function AddPrefectPage() {
                     onChange={(e) => setPrefectClass(e.target.value)}
                     required
                     placeholder="e.g. 10A"
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    className="w-full px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-colors"
                   />
                 </div>
 
@@ -349,14 +350,14 @@ export default function AddPrefectPage() {
                     value={code}
                     onChange={(e) => setCode(e.target.value)}
                     placeholder="e.g. HP001"
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    className="w-full px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-colors"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={submitting || !name.trim() || !prefectClass.trim()}
-                  className="w-full px-4 py-3 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
+                  className="w-full px-4 py-2.5 rounded-md bg-brand-600 text-white font-semibold hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {submitting ? (
                     <span className="flex items-center justify-center gap-2">
@@ -371,11 +372,11 @@ export default function AddPrefectPage() {
             </div>
 
             {/* Info box */}
-            <div className="mt-6 bg-amber-50 border border-amber-200 rounded-2xl p-5">
-              <h3 className="font-semibold text-amber-800 text-sm mb-2">
-                How Device Registration Works
+            <div className="mt-6 bg-brand-50 border border-brand-200 rounded-lg p-5">
+              <h3 className="font-semibold text-brand-900 text-sm mb-2">
+                How device registration works
               </h3>
-              <ol className="text-sm text-amber-700 space-y-1.5 list-decimal list-inside">
+              <ol className="text-sm text-brand-800 space-y-1.5 list-decimal list-inside">
                 <li>Create the prefect above — they get assigned a PIN.</li>
                 <li>
                   Click{" "}
@@ -401,7 +402,7 @@ export default function AddPrefectPage() {
 
           {/* Right: Existing prefects list */}
           <div>
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
               <div className="px-6 py-4 border-b border-slate-100">
                 <h2 className="font-semibold text-slate-800">
                   Registered Prefects{" "}
@@ -413,7 +414,7 @@ export default function AddPrefectPage() {
 
               {loadingList ? (
                 <div className="p-8 text-center">
-                  <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
+                  <div className="w-6 h-6 border-2 border-slate-800 border-t-transparent rounded-full animate-spin mx-auto" />
                 </div>
               ) : prefects.length === 0 ? (
                 <div className="p-8 text-center text-sm text-slate-400">
@@ -427,11 +428,11 @@ export default function AddPrefectPage() {
                       className="px-6 py-4 flex items-center justify-between hover:bg-slate-50/50 transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                        <div className="w-9 h-9 bg-slate-100 rounded-full flex items-center justify-center text-slate-600 text-xs font-semibold">
                           {p.name.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <p className="text-sm font-semibold text-slate-800">
+                          <p className="text-sm font-medium text-slate-800">
                             {p.name}
                           </p>
                           <p className="text-xs text-slate-400">
@@ -449,14 +450,14 @@ export default function AddPrefectPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         {p.registered ? (
-                          <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-medium">
-                            ✓ On device
+                          <span className="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-1 rounded-full font-medium">
+                            On device
                           </span>
                         ) : (
                           <button
                             onClick={() => handleRegisterDevice(p.id)}
                             disabled={registering}
-                            className="text-xs bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full font-medium hover:bg-blue-200 transition-colors disabled:opacity-50"
+                            className="text-xs bg-white text-slate-700 border border-slate-300 px-2.5 py-1 rounded-full font-medium hover:bg-slate-50 transition-colors disabled:opacity-50"
                           >
                             Register
                           </button>
@@ -464,10 +465,14 @@ export default function AddPrefectPage() {
                         <button
                           onClick={() => handleDelete(p.id)}
                           disabled={deletingId === p.id}
-                          className="text-xs text-slate-400 hover:text-red-500 px-1.5 py-1 rounded transition-colors disabled:opacity-50"
+                          className="text-slate-400 hover:text-red-500 px-1.5 py-1 rounded transition-colors disabled:opacity-50"
                           title="Delete prefect"
                         >
-                          {deletingId === p.id ? "..." : "✕"}
+                          {deletingId === p.id ? (
+                            "..."
+                          ) : (
+                            <IconClose className="w-3.5 h-3.5" />
+                          )}
                         </button>
                       </div>
                     </div>

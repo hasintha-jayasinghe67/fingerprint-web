@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { apiUrl } from "@/lib/api";
 import SiteHeader from "@/components/site-header";
+import { IconCheck } from "@/components/icons";
 
 // -------------------------------------------------------
 // Main Component
@@ -66,12 +67,12 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
+    <div className="min-h-screen">
       <SiteHeader title="Settings" backTo="back" maxWidth="3xl" />
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-          <h2 className="text-lg font-semibold text-slate-800 mb-1">
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+          <h2 className="text-lg font-semibold tracking-tight text-slate-800 mb-1">
             Morning Sign-in Time
           </h2>
           <p className="text-sm text-slate-500 mb-6">
@@ -83,14 +84,14 @@ export default function SettingsPage() {
           </p>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
               {error}
             </div>
           )}
 
           {loading ? (
             <div className="flex justify-center py-8">
-              <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+              <div className="w-6 h-6 border-2 border-slate-800 border-t-transparent rounded-full animate-spin" />
             </div>
           ) : (
             <>
@@ -110,7 +111,7 @@ export default function SettingsPage() {
                       setMorningSigninTime(e.target.value);
                       setSaved(false);
                     }}
-                    className="px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 text-lg font-semibold font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    className="px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 text-lg font-semibold font-mono focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-colors"
                   />
                 </div>
                 <div className="text-sm text-slate-500 pb-2.5">
@@ -122,15 +123,16 @@ export default function SettingsPage() {
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
+                  className="px-5 py-2.5 rounded-md bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {saving ? "Saving..." : "Save"}
                 </button>
               </div>
 
               {saved && (
-                <div className="mt-2 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-sm text-emerald-700">
-                  ✓ Morning sign-in time saved as{" "}
+                <div className="mt-2 p-3 bg-emerald-50 border border-emerald-200 rounded-md text-sm text-emerald-700 inline-flex items-center gap-1.5">
+                  <IconCheck className="w-3.5 h-3.5" />
+                  Morning sign-in time saved as{" "}
                   <strong>{format12(morningSigninTime)}</strong>.
                 </div>
               )}
@@ -139,11 +141,11 @@ export default function SettingsPage() {
         </div>
 
         {/* Info */}
-        <div className="mt-6 bg-indigo-50 border border-indigo-200 rounded-2xl p-5">
-          <h3 className="font-semibold text-indigo-800 text-sm mb-2">
+        <div className="mt-6 bg-brand-50 border border-brand-200 rounded-lg p-5">
+          <h3 className="font-semibold text-brand-900 text-sm mb-2">
             The three daily sign-ins
           </h3>
-          <ul className="text-sm text-indigo-700 space-y-1.5 list-disc list-inside">
+          <ul className="text-sm text-brand-800 space-y-1.5 list-disc list-inside">
             <li>
               <strong>Morning sign-in</strong> — expected at your configured
               time. Latecomers are anyone who scans after it.

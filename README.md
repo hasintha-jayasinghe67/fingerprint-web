@@ -36,7 +36,7 @@ when the app is built (Vercel/Netlify: build environment variable). Because
 the browser calls the backend directly, the backend must be reachable from
 users' browsers and must allow CORS requests from the frontend origin.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Archivo](https://fonts.google.com/specimen/Archivo) for UI text and [IBM Plex Mono](https://fonts.google.com/specimen/IBM+Plex+Mono) for data/code.
 
 ## Learn More
 

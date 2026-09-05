@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { apiUrl } from "@/lib/api";
 import SiteHeader from "@/components/site-header";
+import { IconSettings, IconRefresh, IconArrowRight, IconCheck } from "@/components/icons";
 
 // -------------------------------------------------------
 // Types
@@ -88,7 +89,7 @@ export default function AttendanceDatesPage() {
   }, [fetchData]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
+    <div className="min-h-screen">
       <SiteHeader
         title="Attendance Records"
         backTo="/"
@@ -97,30 +98,32 @@ export default function AttendanceDatesPage() {
           <>
             <Link
               href="/prefects"
-              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200 hover:bg-purple-200 transition-all active:scale-95"
+              className="px-3 py-1.5 rounded-md text-xs font-medium bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-800 transition-colors"
             >
               Prefects
             </Link>
             <Link
               href="/gate-sheet"
-              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-all active:scale-95"
+              className="px-3 py-1.5 rounded-md text-xs font-medium bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-800 transition-colors"
             >
               Gate Sheet
             </Link>
             <Link
               href="/settings"
-              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-all active:scale-95"
+              className="px-3 py-1.5 rounded-md text-xs font-medium bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-800 transition-colors"
             >
-              ⚙ Settings
+              <IconSettings className="w-3 h-3 mr-1" />
+              Settings
             </Link>
             <button
               onClick={() => {
                 setLoading(true);
                 fetchData();
               }}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 transition-all active:scale-95"
+              className="px-3 py-1.5 rounded-md text-xs font-medium bg-slate-800 text-white hover:bg-slate-900 transition-colors"
             >
-              ↻ Refresh
+              <IconRefresh className="w-3 h-3 mr-1" />
+              Refresh
             </button>
           </>
         }
@@ -131,7 +134,7 @@ export default function AttendanceDatesPage() {
         {loading && (
           <div className="flex justify-center py-16">
             <div className="flex flex-col items-center gap-3">
-              <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin" />
+              <div className="w-8 h-8 border-2 border-slate-800 border-t-transparent rounded-full animate-spin" />
               <p className="text-sm text-slate-500">
                 Loading attendance dates...
               </p>
@@ -141,7 +144,7 @@ export default function AttendanceDatesPage() {
 
         {/* Error */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
             <strong>Error:</strong> {error}
           </div>
         )}
@@ -150,7 +153,6 @@ export default function AttendanceDatesPage() {
         {!loading && !error && dates.length === 0 && (
           <div className="flex items-center justify-center py-20">
             <div className="flex flex-col items-center gap-3 text-center">
-              <div className="text-5xl text-slate-300">—</div>
               <h3 className="text-lg font-semibold text-slate-700">
                 No attendance records yet
               </h3>
@@ -166,7 +168,7 @@ export default function AttendanceDatesPage() {
         {!loading && dates.length > 0 && (
           <div>
             <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-slate-800">
+              <h2 className="text-lg font-semibold tracking-tight text-slate-800">
                 {dates.length} Day{dates.length !== 1 ? "s" : ""} with
                 Attendance
               </h2>
@@ -179,21 +181,21 @@ export default function AttendanceDatesPage() {
                   <Link
                     key={d.date}
                     href={`/attendance/${d.date}`}
-                    className="group bg-white rounded-2xl border border-slate-200 p-5 hover:border-blue-300 hover:shadow-md transition-all active:scale-[0.98]"
+                    className="group bg-white rounded-lg border border-slate-200 p-5 hover:border-slate-300 hover:shadow-md transition-all"
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div>
-                        <h3 className="text-lg font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
+                        <h3 className="text-base font-semibold text-slate-800 group-hover:text-brand-700 transition-colors">
                           {formatDateDisplay(d.date)}
                         </h3>
                         {relativeLabel && (
-                          <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+                          <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
                             {relativeLabel}
                           </span>
                         )}
                       </div>
-                      <span className="text-slate-300 group-hover:text-blue-400 transition-colors text-lg">
-                        →
+                      <span className="text-slate-300 group-hover:text-brand-600 transition-colors">
+                        <IconArrowRight className="w-4 h-4" />
                       </span>
                     </div>
 
@@ -215,8 +217,9 @@ export default function AttendanceDatesPage() {
                         </div>
                       ) : (
                         d.hasGate && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
-                            ✓ Gate record saved
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <IconCheck className="w-3 h-3" />
+                            Gate record saved
                           </span>
                         )
                       )}

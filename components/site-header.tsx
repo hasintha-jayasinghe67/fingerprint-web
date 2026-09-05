@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { logout } from "@/app/login/actions";
+import { IconMenu, IconClose, IconArrowLeft } from "@/components/icons";
 
 interface SiteHeaderProps {
   title: string;
@@ -38,7 +39,7 @@ export default function SiteHeader({
     <button
       onClick={() => logout()}
       title="Sign out"
-      className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white text-slate-600 border border-slate-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors active:scale-95 shrink-0"
+      className="px-3 py-1.5 rounded-md text-xs font-medium bg-white text-slate-600 border border-slate-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors active:scale-95 shrink-0"
     >
       Log out
     </button>
@@ -79,7 +80,7 @@ export default function SiteHeader({
         : "max-w-7xl";
 
   return (
-    <header className="border-b border-slate-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
+    <header className="border-b border-slate-200 bg-white sticky top-0 z-10">
       <div className={`${containerWidth} mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4`}>
         <div className="flex items-center justify-between gap-3">
           {/* Left: back button + title */}
@@ -90,13 +91,13 @@ export default function SiteHeader({
                   backTo === "back" ? router.back() : router.push(backTo)
                 }
                 aria-label="Go back"
-                className="w-9 h-9 shrink-0 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors active:scale-95"
+                className="w-9 h-9 shrink-0 rounded-md bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors active:scale-95"
               >
-                ←
+                <IconArrowLeft className="w-4 h-4" />
               </button>
             )}
             <div className="min-w-0">
-              <h1 className="text-lg sm:text-xl font-bold text-slate-900 leading-tight truncate">
+              <h1 className="text-lg sm:text-xl font-semibold tracking-tight text-slate-900 leading-tight truncate">
                 {title}
               </h1>
               {subtitle && (
@@ -123,15 +124,19 @@ export default function SiteHeader({
                       onClick={() => setMenuOpen((v) => !v)}
                       aria-label="Toggle menu"
                       aria-expanded={menuOpen}
-                      className="w-9 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors active:scale-95"
+                      className="w-9 h-9 rounded-md bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors active:scale-95"
                     >
-                      {menuOpen ? "✕" : "☰"}
+                      {menuOpen ? (
+                        <IconClose className="w-4.5 h-4.5" />
+                      ) : (
+                        <IconMenu className="w-5 h-5" />
+                      )}
                     </button>
                     {menuOpen && (
                       <div
                         ref={panelRef}
                         onClick={() => setMenuOpen(false)}
-                        className="absolute right-0 top-full mt-2 z-30 w-60 max-h-[70vh] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-xl flex flex-col gap-1.5 [&>*]:w-full [&>*]:justify-center"
+                        className="absolute right-0 top-full mt-2 z-30 w-60 max-h-[70vh] overflow-y-auto rounded-lg border border-slate-200 bg-white p-2 shadow-lg flex flex-col gap-1.5 [&>*]:w-full [&>*]:justify-center"
                       >
                         {actions}
                         {logoutButton}

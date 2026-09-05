@@ -4,6 +4,12 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { apiUrl } from "@/lib/api";
 import SiteHeader from "@/components/site-header";
+import {
+  IconSettings,
+  IconRefresh,
+  IconClose,
+  IconCheck,
+} from "@/components/icons";
 
 // -------------------------------------------------------
 // Types
@@ -103,15 +109,15 @@ function isMorningLate(timePart: string, morningSigninTime: string): boolean {
 function getStatusColor(status: string): string {
   switch (status) {
     case "0":
-      return "bg-emerald-100 text-emerald-800 border-emerald-200";
+      return "bg-emerald-50 text-emerald-700 border-emerald-200";
     case "1":
-      return "bg-amber-100 text-amber-800 border-amber-200";
+      return "bg-amber-50 text-amber-700 border-amber-200";
     case "2":
-      return "bg-blue-100 text-blue-800 border-blue-200";
+      return "bg-sky-50 text-sky-700 border-sky-200";
     case "3":
-      return "bg-indigo-100 text-indigo-800 border-indigo-200";
+      return "bg-slate-100 text-slate-700 border-slate-200";
     default:
-      return "bg-gray-100 text-gray-800 border-gray-200";
+      return "bg-slate-100 text-slate-600 border-slate-200";
   }
 }
 
@@ -211,47 +217,37 @@ export default function AttendancePage() {
   const checkOuts = events.filter((e) => e.status === "1").length;
   const deviceConnected = devices.length;
 
+  const navLinkClass =
+    "px-3 py-1.5 rounded-md text-xs font-medium bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-800 transition-colors";
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
+    <div className="min-h-screen">
       <SiteHeader
         title="House Prefect Affairs"
         actions={
           <>
             <div className="hidden md:block text-right shrink-0">
-              <p className="text-xs text-slate-400 uppercase tracking-wider">
-                Sri Lanka Time
-              </p>
-              <p className="text-sm font-mono font-semibold text-slate-700">
+              <p className="text-[11px] text-slate-400">SL time</p>
+              <p className="text-sm font-mono font-medium text-slate-700">
                 {serverTime || "--:--:-- --"}
               </p>
             </div>
-            <Link
-              href="/attendance"
-              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-100 text-indigo-700 border border-indigo-200 hover:bg-indigo-200 transition-all active:scale-95"
-            >
+            <Link href="/attendance" className={navLinkClass}>
               Attendance
             </Link>
-            <Link
-              href="/prefects"
-              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200 hover:bg-purple-200 transition-all active:scale-95"
-            >
+            <Link href="/prefects" className={navLinkClass}>
               Prefects
             </Link>
-            <Link
-              href="/gate-sheet"
-              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-all active:scale-95"
-            >
+            <Link href="/gate-sheet" className={navLinkClass}>
               Gate Sheet
             </Link>
-            <Link
-              href="/settings"
-              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-all active:scale-95"
-            >
-              ⚙ Settings
+            <Link href="/settings" className={navLinkClass}>
+              <IconSettings className="w-3 h-3 mr-1" />
+              Settings
             </Link>
             <Link
               href="/prefects/add"
-              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-600 text-white hover:bg-purple-700 transition-all active:scale-95"
+              className="px-3 py-1.5 rounded-md text-xs font-medium bg-brand-600 text-white hover:bg-brand-700 transition-colors"
             >
               + Add
             </Link>
@@ -261,25 +257,31 @@ export default function AttendancePage() {
                 setNoticeResult(null);
                 setNoticeMessage("");
               }}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-100 text-amber-700 border border-amber-200 hover:bg-amber-200 transition-all active:scale-95"
+              className={navLinkClass}
             >
               Send Notice
             </button>
             <button
               onClick={() => setAutoRefresh(!autoRefresh)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${
                 autoRefresh
-                  ? "bg-green-100 text-green-700 border border-green-200 hover:bg-green-200"
-                  : "bg-slate-100 text-slate-500 border border-slate-200 hover:bg-slate-200"
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                  : "bg-white text-slate-500 border-slate-200"
               }`}
             >
-              {autoRefresh ? "● Auto-refresh ON" : "○ Auto-refresh OFF"}
+              <span
+                className={`inline-block w-1.5 h-1.5 rounded-full mr-1.5 align-middle ${
+                  autoRefresh ? "bg-emerald-500" : "bg-slate-300"
+                }`}
+              />
+              Auto-refresh {autoRefresh ? "on" : "off"}
             </button>
             <button
               onClick={fetchData}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 transition-all active:scale-95"
+              className="px-3 py-1.5 rounded-md text-xs font-medium bg-slate-800 text-white hover:bg-slate-900 transition-colors"
             >
-              ↻ Refresh
+              <IconRefresh className="w-3 h-3 mr-1" />
+              Refresh
             </button>
           </>
         }
@@ -287,46 +289,29 @@ export default function AttendancePage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Date Banner */}
-        <div className="mb-6 text-center">
-          <h2 className="text-2xl font-bold text-slate-800">
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold tracking-tight text-slate-900">
             {toSriLankanDate(
               new Date().toISOString().replace("Z", "+0530")
             )}
           </h2>
-          <p className="text-sm text-slate-500 mt-1">Today&apos;s Attendance Records</p>
+          <p className="text-sm text-slate-500 mt-0.5">
+            Today&apos;s attendance records
+          </p>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">            <StatCard
-            label="Total Records"
-            value={totalRecords}
-            color="bg-white"
-          />
-          <StatCard
-            label="Unique Users"
-            value={uniqueUsers}
-            color="bg-white"
-          />
-          <StatCard
-            label="Check Ins"
-            value={checkIns}
-            color="bg-white"
-          />
-          <StatCard
-            label="Check Outs"
-            value={checkOuts}
-            color="bg-white"
-          />
-          <StatCard
-            label="Devices Online"
-            value={deviceConnected}
-            color="bg-white"
-          />
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+          <StatCard label="Total records" value={totalRecords} />
+          <StatCard label="Unique users" value={uniqueUsers} />
+          <StatCard label="Check ins" value={checkIns} />
+          <StatCard label="Check outs" value={checkOuts} />
+          <StatCard label="Devices online" value={deviceConnected} />
         </div>
 
         {/* Error */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
             <strong>Error:</strong> {error} — Make sure the ADMS server is
             running on port 8088.
           </div>
@@ -336,7 +321,7 @@ export default function AttendancePage() {
         {loading && events.length === 0 && (
           <div className="flex items-center justify-center py-20">
             <div className="flex flex-col items-center gap-3">
-              <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin" />
+              <div className="w-8 h-8 border-2 border-slate-800 border-t-transparent rounded-full animate-spin" />
               <p className="text-sm text-slate-500">
                 Loading attendance data...
               </p>
@@ -348,7 +333,6 @@ export default function AttendancePage() {
         {!loading && !error && events.length === 0 && (
           <div className="flex items-center justify-center py-20">
             <div className="flex flex-col items-center gap-3 text-center">
-              <div className="text-5xl text-slate-300">—</div>
               <h3 className="text-lg font-semibold text-slate-700">
                 No attendance records today
               </h3>
@@ -365,10 +349,10 @@ export default function AttendancePage() {
 
         {/* Attendance Table */}
         {events.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2">
               <h3 className="font-semibold text-slate-800">
-                Attendance Log ({events.length} records)
+                Attendance log ({events.length} records)
               </h3>
               {lastRefresh && (
                 <p className="text-xs text-slate-400">
@@ -387,22 +371,22 @@ export default function AttendancePage() {
               <table className="w-full">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200">
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 hidden md:table-cell">
                       #
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
                       User
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
                       Time (SL)
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider hidden lg:table-cell">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 hidden lg:table-cell">
                       Verification
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider hidden lg:table-cell">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 hidden lg:table-cell">
                       Device SN
                     </th>
                   </tr>
@@ -418,13 +402,13 @@ export default function AttendancePage() {
                       </td>
                       <td className="px-6 py-3.5">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                          <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-600 text-xs font-semibold">
                             {event.name
                               ? event.name.charAt(0).toUpperCase()
                               : event.pin.slice(-2)}
                           </div>
                           <div>
-                            <p className="text-sm font-semibold text-slate-800">
+                            <p className="text-sm font-medium text-slate-800">
                               {event.name || `User ${event.pin}`}
                             </p>
                             <p className="text-xs text-slate-400 font-mono">
@@ -435,14 +419,14 @@ export default function AttendancePage() {
                       </td>
                       <td className="px-6 py-3.5">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-mono font-semibold text-slate-700">
+                          <span className="text-sm font-mono font-medium text-slate-700">
                             {toSriLankanTime(event.timestamp)}
                           </span>
                           {isMorningLate(
                             event.timestamp.split(" ")[1] || "",
                             morningSigninTime
                           ) && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-600 text-white">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-600 text-white">
                               LATE
                             </span>
                           )}
@@ -450,7 +434,7 @@ export default function AttendancePage() {
                       </td>
                       <td className="px-6 py-3.5">
                         <span
-                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusColor(event.status)}`}
+                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusColor(event.status)}`}
                         >
                           {getStatusLabel(event.status)}
                         </span>
@@ -473,10 +457,10 @@ export default function AttendancePage() {
 
         {/* Devices Section */}
         {devices.length > 0 && (
-          <div className="mt-8 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="mt-8 bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100">
               <h3 className="font-semibold text-slate-800">
-                Connected Devices ({devices.length})
+                Connected devices ({devices.length})
               </h3>
             </div>
             <div className="p-6">
@@ -484,11 +468,11 @@ export default function AttendancePage() {
                 {devices.map((device) => (
                   <div
                     key={device.serialNumber}
-                    className="border border-slate-200 rounded-xl p-4 hover:border-blue-300 transition-colors"
+                    className="border border-slate-200 rounded-lg p-4 hover:border-slate-300 transition-colors"
                   >
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                      <span className="text-sm font-semibold text-slate-700">
+                    <div className="flex items-center gap-2.5 mb-3">
+                      <span className="w-2 h-2 bg-emerald-500 rounded-full" />
+                      <span className="text-sm font-medium text-slate-700">
                         ZKTeco K40 Pro
                       </span>
                     </div>
@@ -526,24 +510,23 @@ export default function AttendancePage() {
           <div className="fixed inset-0 z-50 flex items-center justify-center">
             {/* Backdrop */}
             <div
-              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              className="absolute inset-0 bg-black/40"
               onClick={() => !noticeSending && setNoticeOpen(false)}
             />
 
             {/* Dialog */}
-            <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md mx-4 overflow-hidden">
+            <div className="relative bg-white rounded-lg shadow-xl border border-slate-200 w-full max-w-md mx-4 overflow-hidden">
               <div className="px-6 py-4 border-b border-slate-100">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-slate-800">
-                      Send Notice to Device
-                    </h3>
-                  </div>
+                  <h3 className="font-semibold text-slate-800">
+                    Send notice to device
+                  </h3>
                   <button
                     onClick={() => !noticeSending && setNoticeOpen(false)}
-                    className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition-colors text-sm"
+                    aria-label="Close"
+                    className="w-7 h-7 rounded-md bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition-colors"
                   >
-                    ✕
+                    <IconClose className="w-3.5 h-3.5" />
                   </button>
                 </div>
                 <p className="text-xs text-slate-500 mt-1">
@@ -554,13 +537,15 @@ export default function AttendancePage() {
               <div className="px-6 py-4">
                 {noticeResult ? (
                   <div className="text-center py-4">
-                    <div className="text-3xl mb-2 text-emerald-500">✓</div>
+                    <div className="flex justify-center mb-3 text-emerald-600">
+                      <IconCheck className="w-8 h-8" />
+                    </div>
                     <p className="text-sm font-medium text-slate-700">
                       {noticeResult}
                     </p>
                     <button
                       onClick={() => setNoticeOpen(false)}
-                      className="mt-4 px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition-all"
+                      className="mt-4 px-4 py-2 rounded-md text-sm font-medium bg-slate-800 text-white hover:bg-slate-900 transition-colors"
                     >
                       Close
                     </button>
@@ -568,7 +553,7 @@ export default function AttendancePage() {
                 ) : (
                   <>
                     <label className="block text-sm font-medium text-slate-700 mb-2">
-                      Notice Content
+                      Notice content
                     </label>
                     <textarea
                       value={noticeMessage}
@@ -576,13 +561,13 @@ export default function AttendancePage() {
                       placeholder="Enter the message to display on the device..."
                       rows={4}
                       disabled={noticeSending}
-                      className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 resize-none disabled:opacity-50"
+                      className="w-full px-3 py-2.5 rounded-md border border-slate-300 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 resize-none disabled:opacity-50"
                     />
                     <div className="flex items-center justify-between mt-4">
                       <button
                         onClick={() => setNoticeOpen(false)}
                         disabled={noticeSending}
-                        className="px-4 py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all disabled:opacity-50"
+                        className="px-4 py-2 rounded-md text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors disabled:opacity-50"
                       >
                         Cancel
                       </button>
@@ -615,7 +600,7 @@ export default function AttendancePage() {
                           }
                         }}
                         disabled={!noticeMessage.trim() || noticeSending}
-                        className="px-4 py-2 rounded-lg text-sm font-medium bg-amber-500 text-white hover:bg-amber-600 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-4 py-2 rounded-md text-sm font-medium bg-brand-600 text-white hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {noticeSending ? (
                           <span className="flex items-center gap-2">
@@ -623,7 +608,7 @@ export default function AttendancePage() {
                             Sending...
                           </span>
                         ) : (
-                          "Send Notice"
+                          "Send notice"
                         )}
                       </button>
                     </div>
@@ -635,11 +620,11 @@ export default function AttendancePage() {
         )}
 
         {/* Device Setup Instructions */}
-        <div className="mt-8 bg-amber-50 border border-amber-200 rounded-2xl p-6">
-          <h3 className="font-semibold text-amber-800 mb-3">
-            ZKTeco K40 Pro — ADMS Setup
+        <div className="mt-8 bg-brand-50 border border-brand-200 rounded-lg p-6">
+          <h3 className="font-semibold text-brand-900 mb-3">
+            ZKTeco K40 Pro — ADMS setup
           </h3>
-          <div className="text-sm text-amber-700 space-y-1.5">
+          <div className="text-sm text-brand-800 space-y-1.5">
             <p>
               On the device, go to:{" "}
               <strong>Menu → Comm → ADMS</strong> and set:
@@ -647,7 +632,7 @@ export default function AttendancePage() {
             <ul className="list-disc list-inside ml-4 space-y-1">
               <li>
                 <strong>Server URL:</strong>{" "}
-                <code className="bg-amber-100 px-1.5 py-0.5 rounded font-mono text-xs">
+                <code className="bg-white px-1.5 py-0.5 rounded font-mono text-xs">
                   http://&lt;server-ip&gt;:8088/iclock/cdata
                 </code>
               </li>
@@ -670,23 +655,11 @@ export default function AttendancePage() {
 // Stat Card Component
 // -------------------------------------------------------
 
-function StatCard({
-  label,
-  value,
-  color,
-}: {
-  label: string;
-  value: number;
-  color: string;
-}) {
+function StatCard({ label, value }: { label: string; value: number }) {
   return (
-    <div
-      className={`${color} rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition-shadow`}
-    >
-      <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-        {label}
-      </span>
-      <p className="text-2xl font-bold text-slate-800 mt-2">{value}</p>
+    <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm">
+      <span className="text-xs text-slate-500">{label}</span>
+      <p className="text-2xl font-semibold text-slate-900 mt-1">{value}</p>
     </div>
   );
 }
