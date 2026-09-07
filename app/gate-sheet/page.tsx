@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { apiUrl } from "@/lib/api";
 import SiteHeader from "@/components/site-header";
+import HeaderMenu, { headerMenuItemClass } from "@/components/HeaderMenu";
 import {
   IconSettings,
   IconSave,
@@ -110,9 +111,6 @@ export default function GateSheetPage() {
     0
   );
 
-  const navLinkClass =
-    "px-3 py-1.5 rounded-md text-xs font-medium bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-800 transition-colors";
-
   return (
     <div className="min-h-screen">
       <SiteHeader
@@ -121,16 +119,18 @@ export default function GateSheetPage() {
         backTo="/"
         actions={
           <>
-            <Link href="/attendance" className={navLinkClass}>
-              Attendance
-            </Link>
-            <Link href="/prefects" className={navLinkClass}>
-              Prefects
-            </Link>
-            <Link href="/settings" className={navLinkClass}>
-              <IconSettings className="w-3 h-3 mr-1" />
-              Settings
-            </Link>
+            <HeaderMenu label="Navigate">
+              <Link href="/attendance" role="menuitem" className={headerMenuItemClass}>
+                Attendance
+              </Link>
+              <Link href="/prefects" role="menuitem" className={headerMenuItemClass}>
+                Prefects
+              </Link>
+              <Link href="/settings" role="menuitem" className={headerMenuItemClass}>
+                <IconSettings className="w-3 h-3" />
+                Settings
+              </Link>
+            </HeaderMenu>
             <button
               onClick={handleSave}
               disabled={saving || !dirty}

@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { apiUrl } from "@/lib/api";
+import { useAuth, isAdminOrAbove } from "@/lib/AuthContext";
 import SiteHeader from "@/components/site-header";
 import { IconCheck } from "@/components/icons";
 
@@ -10,13 +12,24 @@ import { IconCheck } from "@/components/icons";
 // -------------------------------------------------------
 
 export default function SettingsPage() {
+  const router = useRouter();
+  const { authenticated, user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [morningSigninTime, setMorningSigninTime] = useState("07:30");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const canWrite = isAdminOrAbove(user);
+
   useEffect(() => {
+    if (authenticated && !canWrite) {
+      router.push("/");
+    }
+  }, [authenticated, canWrite, router]);
+
+  useEffect(() => {
+    if (!canWrite) return;
     let cancelled = false;
     (async () => {
       try {
@@ -37,7 +50,7 @@ export default function SettingsPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [canWrite]);
 
   async function handleSave() {
     setSaving(true);
@@ -65,6 +78,8 @@ export default function SettingsPage() {
     const displayH = h === 0 ? 12 : h > 12 ? h - 12 : h;
     return `${displayH}:${String(m).padStart(2, "0")} ${period}`;
   }
+
+  if (!authenticated || !canWrite) return null;
 
   return (
     <div className="min-h-screen">

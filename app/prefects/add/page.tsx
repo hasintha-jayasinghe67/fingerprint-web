@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { apiUrl } from "@/lib/api";
+import { useAuth, isAdminOrAbove } from "@/lib/AuthContext";
 import SiteHeader from "@/components/site-header";
 import { IconClose } from "@/components/icons";
 
@@ -24,6 +26,10 @@ interface Prefect {
 // -------------------------------------------------------
 
 export default function AddPrefectPage() {
+  const router = useRouter();
+  const { authenticated, user } = useAuth();
+  const canWrite = isAdminOrAbove(user);
+
   // Form state
   const [name, setName] = useState("");
   const [prefectClass, setPrefectClass] = useState("");
@@ -64,8 +70,15 @@ export default function AddPrefectPage() {
   }, []);
 
   useEffect(() => {
+    if (authenticated && !canWrite) {
+      router.push("/");
+    }
+  }, [authenticated, canWrite, router]);
+
+  useEffect(() => {
+    if (!canWrite) return;
     fetchPrefects();
-  }, [fetchPrefects]);
+  }, [fetchPrefects, canWrite]);
 
   // Once enrollment is queued, poll until the device confirms the
   // fingerprint was actually stored (registered -> true) or 3 min pass.
@@ -193,6 +206,8 @@ export default function AddPrefectPage() {
   // -------------------------------------------------------
   // Render
   // -------------------------------------------------------
+
+  if (!authenticated || !canWrite) return null;
 
   return (
     <div className="min-h-screen">

@@ -3,7 +3,9 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { apiUrl } from "@/lib/api";
+import { useAuth, isAdminOrAbove } from "@/lib/AuthContext";
 import SiteHeader from "@/components/site-header";
+import HeaderMenu, { headerMenuItemClass } from "@/components/HeaderMenu";
 import {
   IconSettings,
   IconRefresh,
@@ -134,6 +136,8 @@ function getVerifyLabel(method: string): string {
 // -------------------------------------------------------
 
 export default function AttendancePage() {
+  const { user } = useAuth();
+  const canWrite = isAdminOrAbove(user);
   const [events, setEvents] = useState<AttendanceEvent[]>([]);
   const [devices, setDevices] = useState<DeviceInfo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -217,9 +221,6 @@ export default function AttendancePage() {
   const checkOuts = events.filter((e) => e.status === "1").length;
   const deviceConnected = devices.length;
 
-  const navLinkClass =
-    "px-3 py-1.5 rounded-md text-xs font-medium bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-800 transition-colors";
-
   return (
     <div className="min-h-screen">
       <SiteHeader
@@ -232,35 +233,45 @@ export default function AttendancePage() {
                 {serverTime || "--:--:-- --"}
               </p>
             </div>
-            <Link href="/attendance" className={navLinkClass}>
-              Attendance
-            </Link>
-            <Link href="/prefects" className={navLinkClass}>
-              Prefects
-            </Link>
-            <Link href="/gate-sheet" className={navLinkClass}>
-              Gate Sheet
-            </Link>
-            <Link href="/settings" className={navLinkClass}>
-              <IconSettings className="w-3 h-3 mr-1" />
-              Settings
-            </Link>
-            <Link
-              href="/prefects/add"
-              className="px-3 py-1.5 rounded-md text-xs font-medium bg-brand-600 text-white hover:bg-brand-700 transition-colors"
-            >
-              + Add
-            </Link>
-            <button
-              onClick={() => {
-                setNoticeOpen(true);
-                setNoticeResult(null);
-                setNoticeMessage("");
-              }}
-              className={navLinkClass}
-            >
-              Send Notice
-            </button>
+            <HeaderMenu label="Navigate">
+              <Link href="/attendance" role="menuitem" className={headerMenuItemClass}>
+                Attendance
+              </Link>
+              <Link href="/prefects" role="menuitem" className={headerMenuItemClass}>
+                Prefects
+              </Link>
+              <Link href="/gate-sheet" role="menuitem" className={headerMenuItemClass}>
+                Gate Sheet
+              </Link>
+              {canWrite && (
+                <Link href="/settings" role="menuitem" className={headerMenuItemClass}>
+                  <IconSettings className="w-3 h-3" />
+                  Settings
+                </Link>
+              )}
+            </HeaderMenu>
+            {canWrite && (
+              <Link
+                href="/prefects/add"
+                className="px-3 py-1.5 rounded-md text-xs font-medium bg-brand-600 text-white hover:bg-brand-700 transition-colors"
+              >
+                + Add
+              </Link>
+            )}
+            {/* Send Notice — temporarily disabled
+            {canWrite && (
+              <button
+                onClick={() => {
+                  setNoticeOpen(true);
+                  setNoticeResult(null);
+                  setNoticeMessage("");
+                }}
+                className={navLinkClass}
+              >
+                Send Notice
+              </button>
+            )}
+            */}
             <button
               onClick={() => setAutoRefresh(!autoRefresh)}
               className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${

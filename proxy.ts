@@ -1,37 +1,61 @@
+import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/session";
 
 /**
- * Simple auth gate for the whole app: unauthenticated visitors are sent to
- * /login. The login page itself is public; everything else requires a valid
- * session cookie (see lib/session.ts). Runs on the Node.js runtime, which is
- * the default for Proxy in Next 16.
+ * Page auth gate + session refresh for Next.js 16 (proxy.ts, not middleware.ts).
+ * Authentication only — role checks belong in pages / API routes / RLS.
+ * /api/** is intentionally excluded; each API route must authenticate itself.
  */
-export default function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({ request });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          );
+          supabaseResponse = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          );
+        },
+      },
+    }
+  );
+
+  // Do not intercalate other code between createServerClient and getUser —
+  // getUser refreshes the session when needed.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl;
-  const isPublic =
-    pathname === "/login" || pathname.startsWith("/login/");
 
-  const sessionToken = request.cookies.get(SESSION_COOKIE_NAME)?.value;
-  const authenticated = verifySessionToken(sessionToken);
-
-  // Not signed in → show the login page.
-  if (!isPublic && !authenticated) {
-    return NextResponse.redirect(new URL("/login", request.url));
+  if (!user && pathname !== "/login") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    url.search = "";
+    return NextResponse.redirect(url);
   }
 
-  // Already signed in and hitting the login page → go to the dashboard.
-  if (pathname === "/login" && authenticated) {
-    return NextResponse.redirect(new URL("/", request.url));
+  if (user && pathname === "/login") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/";
+    url.search = "";
+    return NextResponse.redirect(url);
   }
 
-  return NextResponse.next();
+  return supabaseResponse;
 }
 
 export const config = {
-  // Protect all app pages but skip backend rewrites, Next.js internals and
-  // static assets in /public (svg, png, ico, fonts, ...).
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|mjs|json|txt|map|woff2?|ttf|eot)$).*)",
+    "/((?!api|_next/static|_next/image|.*\\.(?:ico|jpeg|jpg|png|svg|gif|webp)$).*)",
   ],
 };

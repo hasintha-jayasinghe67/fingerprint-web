@@ -1,0 +1,64 @@
+"use client";
+
+import { useEffect, useRef, type ReactNode } from "react";
+
+interface ModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  children: ReactNode;
+}
+
+export default function Modal({ isOpen, onClose, title, children }: ModalProps) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    if (isOpen) {
+      dialog.showModal();
+      document.body.style.overflow = "hidden";
+    } else {
+      dialog.close();
+      document.body.style.overflow = "";
+    }
+  }, [isOpen]);
+
+  return (
+    <dialog
+      ref={dialogRef}
+      onClose={onClose}
+      className="m-auto p-0 rounded-lg bg-white border border-slate-200 shadow-xl max-w-md w-[calc(100%-2rem)] sm:w-full backdrop:bg-black/40"
+    >
+      <div className="p-5 sm:p-6 flex flex-col gap-4">
+        <div className="flex justify-between items-center gap-3">
+          <h2 className="text-lg font-semibold tracking-tight text-slate-900">
+            {title}
+          </h2>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-md bg-slate-100 text-slate-500 hover:text-slate-700 hover:bg-slate-200 transition-colors shrink-0"
+            aria-label="Close"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+        <div>{children}</div>
+      </div>
+    </dialog>
+  );
+}

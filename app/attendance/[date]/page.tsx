@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { apiUrl } from "@/lib/api";
 import SiteHeader from "@/components/site-header";
+import HeaderMenu, { headerMenuItemClass } from "@/components/HeaderMenu";
 import {
   IconSettings,
   IconRefresh,
@@ -221,25 +222,18 @@ export default function AttendanceDateDetailPage() {
         maxWidth="5xl"
         actions={
           <>
-            <Link
-              href="/attendance"
-              className="px-3 py-1.5 rounded-md text-xs font-medium bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-800 transition-colors"
-            >
-              All Dates
-            </Link>
-            <Link
-              href="/gate-sheet"
-              className="px-3 py-1.5 rounded-md text-xs font-medium bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-800 transition-colors"
-            >
-              Gate Sheet
-            </Link>
-            <Link
-              href="/settings"
-              className="px-3 py-1.5 rounded-md text-xs font-medium bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-800 transition-colors"
-            >
-              <IconSettings className="w-3 h-3 mr-1" />
-              Morning time
-            </Link>
+            <HeaderMenu label="Navigate">
+              <Link href="/attendance" role="menuitem" className={headerMenuItemClass}>
+                All Dates
+              </Link>
+              <Link href="/gate-sheet" role="menuitem" className={headerMenuItemClass}>
+                Gate Sheet
+              </Link>
+              <Link href="/settings" role="menuitem" className={headerMenuItemClass}>
+                <IconSettings className="w-3 h-3" />
+                Morning time
+              </Link>
+            </HeaderMenu>
             <button
               onClick={() => {
                 setLoading(true);
