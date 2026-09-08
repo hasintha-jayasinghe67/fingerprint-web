@@ -7,9 +7,17 @@ interface ModalProps {
   onClose: () => void;
   title: string;
   children: ReactNode;
+  /** Wider dialog for forms with large text areas. Default: md. */
+  size?: "md" | "lg";
 }
 
-export default function Modal({ isOpen, onClose, title, children }: ModalProps) {
+export default function Modal({
+  isOpen,
+  onClose,
+  title,
+  children,
+  size = "md",
+}: ModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -25,11 +33,16 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
     }
   }, [isOpen]);
 
+  const widthClass =
+    size === "lg"
+      ? "max-w-lg w-[calc(100%-2rem)] sm:w-full"
+      : "max-w-md w-[calc(100%-2rem)] sm:w-full";
+
   return (
     <dialog
       ref={dialogRef}
       onClose={onClose}
-      className="m-auto p-0 rounded-lg bg-white border border-slate-200 shadow-xl max-w-md w-[calc(100%-2rem)] sm:w-full backdrop:bg-black/40"
+      className={`m-auto p-0 rounded-lg bg-white border border-slate-200 shadow-xl ${widthClass} backdrop:bg-black/40`}
     >
       <div className="p-5 sm:p-6 flex flex-col gap-4">
         <div className="flex justify-between items-center gap-3">

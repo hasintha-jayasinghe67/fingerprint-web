@@ -19,6 +19,10 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "House Prefect Affairs",
   description: "House prefect attendance management system",
+  icons: {
+    icon: [{ url: "/ICON.jpeg", type: "image/jpeg" }],
+    apple: [{ url: "/ICON.jpeg", type: "image/jpeg" }],
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

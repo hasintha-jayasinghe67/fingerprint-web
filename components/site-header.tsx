@@ -7,7 +7,10 @@ import Image from "next/image";
 import type { ReactNode } from "react";
 import { useAuth, isAdminOrAbove } from "@/lib/AuthContext";
 import ChangePasswordModal from "@/components/ChangePasswordModal";
-import HeaderMenu, { headerMenuItemClass } from "@/components/HeaderMenu";
+import HeaderMenu, {
+  HeaderMenuLayoutContext,
+  headerMenuItemClass,
+} from "@/components/HeaderMenu";
 import { IconMenu, IconClose, IconArrowLeft } from "@/components/icons";
 
 interface SiteHeaderProps {
@@ -202,11 +205,23 @@ export default function SiteHeader({
                       {menuOpen && (
                         <div
                           ref={panelRef}
-                          onClick={() => setMenuOpen(false)}
+                          onClick={(e) => {
+                            const target = e.target as HTMLElement;
+                            // Keep the overflow panel open when toggling a
+                            // nested HeaderMenu; close after a real action.
+                            if (target.closest("[data-header-menu-trigger]")) {
+                              return;
+                            }
+                            if (target.closest("a[href], button")) {
+                              setMenuOpen(false);
+                            }
+                          }}
                           className="absolute right-0 top-full mt-2 z-30 w-60 max-h-[70vh] overflow-y-auto rounded-lg border border-slate-200 bg-white p-2 shadow-lg flex flex-col gap-1.5 [&>*]:w-full [&>*]:justify-center"
                         >
-                          {actions}
-                          {accountControlsFlat}
+                          <HeaderMenuLayoutContext.Provider value="inline">
+                            {actions}
+                            {accountControlsFlat}
+                          </HeaderMenuLayoutContext.Provider>
                         </div>
                       )}
                     </div>
