@@ -26,6 +26,8 @@ interface AttendanceEvent {
   verifyMethod: string;
   workCode: string | null;
   deviceSN: string;
+  /** Server-computed: morning late per gate-duty vs 07:00 rules. */
+  late?: boolean;
 }
 
 interface DeviceInfo {
@@ -98,8 +100,7 @@ function getStatusLabel(status: string): string {
 }
 
 /**
- * A scan counts as a late MORNING sign-in when its time falls inside the
- * morning slot (before 11:00) but after the configured morning sign-in time.
+ * Fallback only if the API omits `late` (older server). Prefer event.late.
  */
 function isMorningLate(timePart: string, morningSigninTime: string): boolean {
   if (!timePart) return false;
@@ -433,10 +434,11 @@ export default function AttendancePage() {
                           <span className="text-sm font-mono font-medium text-slate-700">
                             {toSriLankanTime(event.timestamp)}
                           </span>
-                          {isMorningLate(
-                            event.timestamp.split(" ")[1] || "",
-                            morningSigninTime
-                          ) && (
+                          {(event.late ??
+                            isMorningLate(
+                              event.timestamp.split(" ")[1] || "",
+                              morningSigninTime
+                            )) && (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-600 text-white">
                               LATE
                             </span>
