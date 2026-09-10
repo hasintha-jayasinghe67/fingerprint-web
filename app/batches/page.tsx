@@ -192,7 +192,7 @@ export default function BatchesPage() {
     <div className="min-h-screen">
       <SiteHeader
         title="Batches"
-        subtitle="Groups of house prefects with shared morning sign-in times"
+        subtitle=""
         backTo="/"
         maxWidth="5xl"
         actionsLayout="wrap"
