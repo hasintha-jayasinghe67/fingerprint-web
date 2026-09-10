@@ -45,9 +45,16 @@ interface GateEntry {
   signedIn: boolean;
 }
 
+interface DayBatch {
+  id: number;
+  name: string;
+  morningSigninTime: string;
+  extended: boolean;
+}
+
 interface DayData {
   date: string;
-  morningSigninTime: string;
+  batches: DayBatch[];
   gateSaved: boolean;
   dayOfWeek: number;
   gateEntries: GateEntry[];
@@ -434,12 +441,15 @@ export default function AttendanceDateDetailPage() {
               <Link href="/attendance" role="menuitem" className={headerMenuItemClass}>
                 All Dates
               </Link>
+              <Link href="/batches" role="menuitem" className={headerMenuItemClass}>
+                Batches
+              </Link>
               <Link href="/gate-sheet" role="menuitem" className={headerMenuItemClass}>
                 Gate Sheet
               </Link>
               <Link href="/settings" role="menuitem" className={headerMenuItemClass}>
                 <IconSettings className="w-3 h-3" />
-                Morning time
+                Settings
               </Link>
             </HeaderMenu>
             <button
@@ -516,11 +526,9 @@ export default function AttendanceDateDetailPage() {
                     </p>
                     <p className="text-2xl font-semibold text-slate-900">{morning.length}</p>
                     <p className="text-xs text-slate-400 mt-1">
-                      Gate duty by{" "}
-                      {data.morningSigninTime
-                        ? toTimeNoSeconds(`${data.morningSigninTime}:00`)
-                        : "—"}
-                      ; others by 7:00 AM
+                      {(data.batches || []).length > 0
+                        ? `Batch times; others by 7:00 AM`
+                        : "Late after 7:00 AM (no batches)"}
                     </p>
                   </div>
                   <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm">
@@ -559,7 +567,16 @@ export default function AttendanceDateDetailPage() {
                 ) : (
                   <SignInTable
                     title={`Morning Check-in Times (${morning.length})`}
-                    subtitle={`Gate duty: after ${toTimeNoSeconds(`${data.morningSigninTime}:00`)}; no gate: after 7:00 AM`}
+                    subtitle={
+                      (data.batches || []).length > 0
+                        ? `Batch gate/extended: ${(data.batches || [])
+                            .map(
+                              (b) =>
+                                `${b.name} ${toTimeNoSeconds(`${b.morningSigninTime}:00`)}`
+                            )
+                            .join(" · ")}; otherwise after 7:00 AM`
+                        : "Late after 7:00 AM"
+                    }
                     entries={morning}
                   />
                 )}

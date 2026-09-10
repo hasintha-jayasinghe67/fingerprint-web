@@ -101,12 +101,12 @@ function getStatusLabel(status: string): string {
 
 /**
  * Fallback only if the API omits `late` (older server). Prefer event.late.
+ * Without batch context, treat morning scans after 07:00 as late.
  */
-function isMorningLate(timePart: string, morningSigninTime: string): boolean {
+function isMorningLate(timePart: string): boolean {
   if (!timePart) return false;
   const t = timePart.length === 5 ? `${timePart}:00` : timePart;
-  const threshold = morningSigninTime.length === 5 ? `${morningSigninTime}:00` : morningSigninTime;
-  return t < "11:00:00" && t > threshold;
+  return t < "11:00:00" && t > "07:00:00";
 }
 
 function getStatusColor(status: string): string {
@@ -146,7 +146,6 @@ export default function AttendancePage() {
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [serverTime, setServerTime] = useState<string>("");
   const [autoRefresh, setAutoRefresh] = useState(true);
-  const [morningSigninTime, setMorningSigninTime] = useState<string>("07:30");
 
   // Notice / SMS dialog state
   const [noticeOpen, setNoticeOpen] = useState(false);
@@ -161,23 +160,16 @@ export default function AttendancePage() {
       setLoading(true);
       setError(null);
 
-      const [attRes, devRes, setRes] = await Promise.all([
+      const [attRes, devRes] = await Promise.all([
         fetch(apiUrl(`/api/attendance?date=${todayISO}`)),
         fetch(apiUrl("/api/devices")),
-        fetch(apiUrl("/api/settings")),
       ]);
 
       if (!attRes.ok) throw new Error("Failed to fetch attendance");
       if (!devRes.ok) throw new Error("Failed to fetch devices");
-      if (!setRes.ok) throw new Error("Failed to fetch settings");
 
       const attData = await attRes.json();
       const devData = await devRes.json();
-      const setData = await setRes.json();
-
-      if (setData.settings?.morningSigninTime) {
-        setMorningSigninTime(setData.settings.morningSigninTime);
-      }
 
       // Sort by timestamp ascending
       const sorted = attData.events.sort(
@@ -240,6 +232,9 @@ export default function AttendancePage() {
               </Link>
               <Link href="/prefects" role="menuitem" className={headerMenuItemClass}>
                 Prefects
+              </Link>
+              <Link href="/batches" role="menuitem" className={headerMenuItemClass}>
+                Batches
               </Link>
               <Link href="/gate-sheet" role="menuitem" className={headerMenuItemClass}>
                 Gate Sheet
@@ -436,8 +431,7 @@ export default function AttendancePage() {
                           </span>
                           {(event.late ??
                             isMorningLate(
-                              event.timestamp.split(" ")[1] || "",
-                              morningSigninTime
+                              event.timestamp.split(" ")[1] || ""
                             )) && (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-600 text-white">
                               LATE

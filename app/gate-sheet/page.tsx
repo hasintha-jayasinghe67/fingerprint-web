@@ -126,6 +126,9 @@ export default function GateSheetPage() {
               <Link href="/prefects" role="menuitem" className={headerMenuItemClass}>
                 Prefects
               </Link>
+              <Link href="/batches" role="menuitem" className={headerMenuItemClass}>
+                Batches
+              </Link>
               <Link href="/settings" role="menuitem" className={headerMenuItemClass}>
                 <IconSettings className="w-3 h-3" />
                 Settings

@@ -101,6 +101,9 @@ export default function AttendanceDatesPage() {
               <Link href="/prefects" role="menuitem" className={headerMenuItemClass}>
                 Prefects
               </Link>
+              <Link href="/batches" role="menuitem" className={headerMenuItemClass}>
+                Batches
+              </Link>
               <Link href="/gate-sheet" role="menuitem" className={headerMenuItemClass}>
                 Gate Sheet
               </Link>
