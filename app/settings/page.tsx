@@ -88,14 +88,14 @@ export default function SettingsPage() {
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
           <h2 className="text-lg font-semibold tracking-tight text-slate-800 mb-1">
-            Morning Sign-in Time
+            Gate Duty Sign-in Time
           </h2>
           <p className="text-sm text-slate-500 mb-6">
-            The time house prefects are expected to do their first (morning)
-            sign-in of the day. Anyone who scans their fingerprint after this
-            time is flagged as a <strong>latecomer</strong> in the attendance
-            records. This value changes often, so it can be updated here any
-            time — existing records are re-evaluated against the current time.
+            The morning sign-in deadline for house prefects assigned to a gate
+            that day. Scans after this time are flagged as late. Prefects with
+            no gate assignment are late after <strong>7:00 AM</strong> instead.
+            This value changes often — existing records are re-evaluated against
+            the current setting.
           </p>
 
           {error && (
@@ -116,7 +116,7 @@ export default function SettingsPage() {
                     htmlFor="morningSigninTime"
                     className="block text-sm font-medium text-slate-700 mb-1.5"
                   >
-                    Expected morning sign-in time
+                    Expected gate-duty sign-in time
                   </label>
                   <input
                     id="morningSigninTime"
@@ -147,7 +147,7 @@ export default function SettingsPage() {
               {saved && (
                 <div className="mt-2 p-3 bg-emerald-50 border border-emerald-200 rounded-md text-sm text-emerald-700 inline-flex items-center gap-1.5">
                   <IconCheck className="w-3.5 h-3.5" />
-                  Morning sign-in time saved as{" "}
+                  Gate duty sign-in time saved as{" "}
                   <strong>{format12(morningSigninTime)}</strong>.
                 </div>
               )}
@@ -162,8 +162,8 @@ export default function SettingsPage() {
           </h3>
           <ul className="text-sm text-brand-800 space-y-1.5 list-disc list-inside">
             <li>
-              <strong>Morning sign-in</strong> — expected at your configured
-              time. Latecomers are anyone who scans after it.
+              <strong>Morning sign-in</strong> — gate-duty prefects late after
+              the configured time; everyone else late after 7:00 AM.
             </li>
             <li>
               <strong>11:15 sign-in</strong> — anyone who scans at or after

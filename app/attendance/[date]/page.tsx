@@ -516,10 +516,11 @@ export default function AttendanceDateDetailPage() {
                     </p>
                     <p className="text-2xl font-semibold text-slate-900">{morning.length}</p>
                     <p className="text-xs text-slate-400 mt-1">
-                      Expected by{" "}
+                      Gate duty by{" "}
                       {data.morningSigninTime
                         ? toTimeNoSeconds(`${data.morningSigninTime}:00`)
                         : "—"}
+                      ; others by 7:00 AM
                     </p>
                   </div>
                   <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm">
@@ -558,7 +559,7 @@ export default function AttendanceDateDetailPage() {
                 ) : (
                   <SignInTable
                     title={`Morning Check-in Times (${morning.length})`}
-                    subtitle={`Target ${toTimeNoSeconds(`${data.morningSigninTime}:00`)} — scans after this are late`}
+                    subtitle={`Gate duty: after ${toTimeNoSeconds(`${data.morningSigninTime}:00`)}; no gate: after 7:00 AM`}
                     entries={morning}
                   />
                 )}
