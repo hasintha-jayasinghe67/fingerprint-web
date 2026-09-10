@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { apiUrl } from "@/lib/api";
+import { apiUrl, readApiJson } from "@/lib/api";
 import { useAuth, isAdminOrAbove } from "@/lib/AuthContext";
 import SiteHeader from "@/components/site-header";
 import { IconCheck } from "@/components/icons";
@@ -46,7 +46,9 @@ export default function SettingsPage() {
       try {
         const res = await fetch(apiUrl("/api/settings"));
         if (!res.ok) throw new Error("Failed to load settings");
-        const data = await res.json();
+        const data = await readApiJson<{
+          settings?: { batches?: BatchSetting[] };
+        }>(res);
         if (!cancelled) {
           setBatches(data.settings?.batches || []);
         }
@@ -85,7 +87,10 @@ export default function SettingsPage() {
           })),
         }),
       });
-      const data = await res.json();
+      const data = await readApiJson<{
+        settings?: { batches?: BatchSetting[] };
+        error?: string;
+      }>(res);
       if (!res.ok) throw new Error(data.error || "Failed to save settings");
       setBatches(data.settings?.batches || batches);
       setSaved(true);

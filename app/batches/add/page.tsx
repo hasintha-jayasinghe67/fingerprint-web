@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { apiUrl } from "@/lib/api";
+import { apiUrl, readApiJson } from "@/lib/api";
 import { useAuth, isAdminOrAbove } from "@/lib/AuthContext";
 import SiteHeader from "@/components/site-header";
 
@@ -56,19 +56,19 @@ export default function AddBatchPage() {
         fetch(apiUrl("/api/batches")),
       ]);
       if (pRes.ok) {
-        const data = await pRes.json();
+        const data = await readApiJson<{ prefects?: Prefect[] }>(pRes);
         setPrefects(data.prefects || []);
       }
       if (bRes.ok) {
-        const data = await bRes.json();
+        const data = await readApiJson<{ batches?: BatchSummary[] }>(bRes);
         const map = new Map<number, string>();
-        for (const b of (data.batches || []) as BatchSummary[]) {
+        for (const b of data.batches || []) {
           map.set(b.id, b.name);
         }
         setBatchNames(map);
       }
     } catch {
-      // silent
+      // silent — create form can still submit without the name map
     } finally {
       setLoadingList(false);
     }
@@ -102,7 +102,7 @@ export default function AddBatchPage() {
           prefectIds: Array.from(selected),
         }),
       });
-      const data = await res.json();
+      const data = await readApiJson<{ error?: string }>(res);
       if (!res.ok) throw new Error(data.error || "Failed to create batch");
       router.push("/batches");
     } catch (err) {

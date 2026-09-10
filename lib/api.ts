@@ -12,3 +12,29 @@ const BACKEND_BASE_URL = (process.env.BACKEND_API_URL ?? "").replace(/\/+$/, "")
 export function apiUrl(path: string): string {
   return `${BACKEND_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
 }
+
+/**
+ * Parse a fetch Response as JSON. If the body is not JSON (e.g. the ADMS
+ * catch-all plain-text "OK"), throw a clear Error instead of a SyntaxError.
+ */
+export async function readApiJson<T = any>(res: Response): Promise<T> {
+  const text = await res.text();
+  const trimmed = text.trim();
+  if (!trimmed) {
+    throw new Error(
+      res.ok
+        ? "Empty response from API"
+        : `API error ${res.status}: empty body`
+    );
+  }
+  try {
+    return JSON.parse(trimmed) as T;
+  } catch {
+    const preview =
+      trimmed.length > 80 ? `${trimmed.slice(0, 80)}…` : trimmed;
+    throw new Error(
+      `API returned non-JSON (${res.status}): ${preview}. ` +
+        "If this is /api/batches, redeploy fingerprint-server with the batches routes."
+    );
+  }
+}

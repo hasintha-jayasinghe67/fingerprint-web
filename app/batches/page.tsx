@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { apiUrl } from "@/lib/api";
+import { apiUrl, readApiJson } from "@/lib/api";
 import { useAuth, isAdminOrAbove } from "@/lib/AuthContext";
 import SiteHeader from "@/components/site-header";
 import HeaderMenu, { headerMenuItemClass } from "@/components/HeaderMenu";
@@ -68,16 +68,21 @@ export default function BatchesPage() {
         fetch(apiUrl("/api/batches")),
         fetch(apiUrl("/api/prefects")),
       ]);
-      if (bRes.ok) {
-        const data = await bRes.json();
-        setBatches(data.batches || []);
+      const bData = await readApiJson<{ batches?: Batch[]; error?: string }>(bRes);
+      if (!bRes.ok) {
+        throw new Error(bData.error || `Failed to load batches (${bRes.status})`);
       }
+      setBatches(bData.batches || []);
+
       if (pRes.ok) {
-        const data = await pRes.json();
-        setPrefects(data.prefects || []);
+        const pData = await readApiJson<{ prefects?: Prefect[] }>(pRes);
+        setPrefects(pData.prefects || []);
       }
-    } catch {
-      // silent
+    } catch (err) {
+      setFeedback({
+        msg: err instanceof Error ? err.message : "Failed to load batches",
+        ok: false,
+      });
     } finally {
       setLoading(false);
     }
@@ -97,10 +102,10 @@ export default function BatchesPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ extended: !batch.extended }),
       });
-      const data = await res.json();
+      const data = await readApiJson<{ batch?: Batch; error?: string }>(res);
       if (!res.ok) throw new Error(data.error || "Failed to update batch");
       setBatches((prev) =>
-        prev.map((b) => (b.id === batch.id ? data.batch : b))
+        prev.map((b) => (b.id === batch.id ? data.batch! : b))
       );
     } catch (err) {
       setFeedback({
@@ -146,7 +151,7 @@ export default function BatchesPage() {
           prefectIds: Array.from(editSelected),
         }),
       });
-      const data = await res.json();
+      const data = await readApiJson<{ error?: string }>(res);
       if (!res.ok) throw new Error(data.error || "Failed to update batch");
       setEditing(null);
       setFeedback({ msg: "Batch updated.", ok: true });
