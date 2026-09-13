@@ -29,6 +29,7 @@ export default function PrefectsPage() {
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [registeringId, setRegisteringId] = useState<number | null>(null);
+  const [unenrollingId, setUnenrollingId] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<{ id: number; msg: string; ok: boolean } | null>(null);
 
   // Edit modal state
@@ -102,6 +103,37 @@ export default function PrefectsPage() {
     } catch {
       setFeedback({ id, msg: "Network error", ok: false });
       setRegisteringId(null);
+    }
+  }
+
+  // -------------------------------------------------------
+  // Unenroll from device
+  // -------------------------------------------------------
+
+  async function handleUnenroll(id: number) {
+    const prefect = prefects.find((p) => p.id === id);
+    if (
+      !window.confirm(
+        `Unenroll ${prefect?.name || "this prefect"} from the fingerprint device? Their record will be kept, but their fingerprint will be removed.`
+      )
+    ) {
+      return;
+    }
+    setUnenrollingId(id);
+    setFeedback(null);
+    try {
+      const res = await fetch(apiUrl(`/api/prefects/${id}/unregister-device`), { method: "POST" });
+      const data = await res.json();
+      setFeedback({ id, msg: res.ok ? data.message : data.error, ok: res.ok });
+      if (res.ok) {
+        setPrefects((prev) =>
+          prev.map((p) => (p.id === id ? { ...p, registered: false } : p))
+        );
+      }
+    } catch {
+      setFeedback({ id, msg: "Network error", ok: false });
+    } finally {
+      setUnenrollingId(null);
     }
   }
 
@@ -298,6 +330,15 @@ export default function PrefectsPage() {
                               className="px-2.5 py-1 rounded-md text-xs font-medium bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 transition-colors"
                             >
                               Enroll
+                            </button>
+                          )}
+                          {p.registered && (
+                            <button
+                              onClick={() => handleUnenroll(p.id)}
+                              disabled={unenrollingId === p.id}
+                              className="px-2.5 py-1 rounded-md text-xs font-medium bg-white text-amber-700 border border-amber-300 hover:bg-amber-50 transition-colors disabled:opacity-50"
+                            >
+                              {unenrollingId === p.id ? "..." : "Unenroll"}
                             </button>
                           )}
                           <button
