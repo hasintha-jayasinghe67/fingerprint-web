@@ -178,7 +178,7 @@ export default function PrefectsPage() {
 
   async function handleDelete(id: number) {
     const prefect = prefects.find((p) => p.id === id);
-    if (!window.confirm(`Delete ${prefect?.name || "this prefect"}? This also removes their records.`)) {
+    if (!window.confirm(`Delete ${prefect?.name || "this prefect"}? This also removes their fingerprint from the device and their records.`)) {
       return;
     }
     setDeletingId(id);
