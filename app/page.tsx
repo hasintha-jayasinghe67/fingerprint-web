@@ -153,6 +153,12 @@ export default function AttendancePage() {
   const [noticeSending, setNoticeSending] = useState(false);
   const [noticeResult, setNoticeResult] = useState<string | null>(null);
 
+  const [clearingQueue, setClearingQueue] = useState(false);
+  const [queueFeedback, setQueueFeedback] = useState<{
+    ok: boolean;
+    msg: string;
+  } | null>(null);
+
   const todayISO = getTodaySriLankanDateISO();
 
   const fetchData = useCallback(async () => {
@@ -206,6 +212,36 @@ export default function AttendancePage() {
     const interval = setInterval(fetchData, 10000);
     return () => clearInterval(interval);
   }, [autoRefresh, fetchData]);
+
+  async function handleClearCommandQueue() {
+    if (
+      !window.confirm(
+        "Clear all pending ZKTeco command-queue actions (enroll, updates, SMS, etc.)? Commands already sent to the device are not cancelled."
+      )
+    ) {
+      return;
+    }
+    setClearingQueue(true);
+    setQueueFeedback(null);
+    try {
+      const res = await fetch(apiUrl("/api/devices/clear-command-queue"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      setQueueFeedback({
+        ok: res.ok,
+        msg: res.ok
+          ? data.message || "Command queue cleared."
+          : data.error || "Failed to clear command queue",
+      });
+    } catch {
+      setQueueFeedback({ ok: false, msg: "Network error" });
+    } finally {
+      setClearingQueue(false);
+    }
+  }
 
   // Stats
   const totalRecords = events.length;
@@ -463,51 +499,81 @@ export default function AttendancePage() {
         )}
 
         {/* Devices Section */}
-        {devices.length > 0 && (
+        {(devices.length > 0 || canWrite) && (
           <div className="mt-8 bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100">
+            <div className="px-6 py-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
               <h3 className="font-semibold text-slate-800">
                 Connected devices ({devices.length})
               </h3>
+              {canWrite && (
+                <button
+                  type="button"
+                  onClick={handleClearCommandQueue}
+                  disabled={clearingQueue}
+                  className="px-3 py-1.5 rounded-md text-xs font-medium border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-colors"
+                >
+                  {clearingQueue ? "Clearing…" : "Clear command queue"}
+                </button>
+              )}
             </div>
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {devices.map((device) => (
-                  <div
-                    key={device.serialNumber}
-                    className="border border-slate-200 rounded-lg p-4 hover:border-slate-300 transition-colors"
-                  >
-                    <div className="flex items-center gap-2.5 mb-3">
-                      <span className="w-2 h-2 bg-emerald-500 rounded-full" />
-                      <span className="text-sm font-medium text-slate-700">
-                        ZKTeco K40 Pro
-                      </span>
-                    </div>
-                    <div className="space-y-1.5 text-xs text-slate-500">
-                      <p>
-                        <span className="font-medium">Serial:</span>{" "}
-                        <span className="font-mono">{device.serialNumber}</span>
-                      </p>
-                      {device.ip && (
-                        <p>
-                          <span className="font-medium">IP:</span>{" "}
-                          <span className="font-mono">{device.ip}</span>
-                        </p>
-                      )}
-                      <p>
-                        <span className="font-medium">Last seen:</span>{" "}
-                        {new Date(device.lastSeen).toLocaleString("en-US", {
-                          timeZone: "Asia/Colombo",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          second: "2-digit",
-                          hour12: true,
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+            {queueFeedback && (
+              <div
+                className={`px-6 py-3 text-sm border-b ${
+                  queueFeedback.ok
+                    ? "bg-emerald-50 border-emerald-100 text-emerald-800"
+                    : "bg-red-50 border-red-100 text-red-700"
+                }`}
+              >
+                {queueFeedback.msg}
               </div>
+            )}
+            <div className="p-6">
+              {devices.length === 0 ? (
+                <p className="text-sm text-slate-500">
+                  No device has polled yet. Clearing the queue still drops any
+                  commands waiting in memory.
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {devices.map((device) => (
+                    <div
+                      key={device.serialNumber}
+                      className="border border-slate-200 rounded-lg p-4 hover:border-slate-300 transition-colors"
+                    >
+                      <div className="flex items-center gap-2.5 mb-3">
+                        <span className="w-2 h-2 bg-emerald-500 rounded-full" />
+                        <span className="text-sm font-medium text-slate-700">
+                          ZKTeco K40 Pro
+                        </span>
+                      </div>
+                      <div className="space-y-1.5 text-xs text-slate-500">
+                        <p>
+                          <span className="font-medium">Serial:</span>{" "}
+                          <span className="font-mono">
+                            {device.serialNumber}
+                          </span>
+                        </p>
+                        {device.ip && (
+                          <p>
+                            <span className="font-medium">IP:</span>{" "}
+                            <span className="font-mono">{device.ip}</span>
+                          </p>
+                        )}
+                        <p>
+                          <span className="font-medium">Last seen:</span>{" "}
+                          {new Date(device.lastSeen).toLocaleString("en-US", {
+                            timeZone: "Asia/Colombo",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            second: "2-digit",
+                            hour12: true,
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
