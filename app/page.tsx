@@ -158,6 +158,7 @@ export default function AttendancePage() {
     ok: boolean;
     msg: string;
   } | null>(null);
+  const [showLatecomers, setShowLatecomers] = useState(false);
 
   const todayISO = getTodaySriLankanDateISO();
 
@@ -249,6 +250,18 @@ export default function AttendancePage() {
   const checkIns = events.filter((e) => e.status === "0").length;
   const checkOuts = events.filter((e) => e.status === "1").length;
   const deviceConnected = devices.length;
+
+  function eventIsLate(event: AttendanceEvent): boolean {
+    return (
+      event.late ??
+      isMorningLate(event.timestamp.split(" ")[1] || "")
+    );
+  }
+
+  const displayedEvents = showLatecomers
+    ? events.filter(eventIsLate)
+    : events;
+  const latecomerCount = events.filter(eventIsLate).length;
 
   return (
     <div className="min-h-screen">
@@ -395,21 +408,48 @@ export default function AttendancePage() {
           <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2">
               <h3 className="font-semibold text-slate-800">
-                Attendance log ({events.length} records)
+                {showLatecomers
+                  ? `Latecomers (${displayedEvents.length})`
+                  : `Attendance log (${events.length} records)`}
               </h3>
-              {lastRefresh && (
-                <p className="text-xs text-slate-400">
-                  Last updated:{" "}
-                  {lastRefresh.toLocaleTimeString("en-US", {
-                    timeZone: "Asia/Colombo",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    second: "2-digit",
-                    hour12: true,
-                  })}
-                </p>
-              )}
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowLatecomers((v) => !v)}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${
+                    showLatecomers
+                      ? "bg-red-50 text-red-700 border-red-200"
+                      : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                  }`}
+                >
+                  {showLatecomers
+                    ? "Show all"
+                    : `Show latecomers${latecomerCount > 0 ? ` (${latecomerCount})` : ""}`}
+                </button>
+                {lastRefresh && (
+                  <p className="text-xs text-slate-400">
+                    Last updated:{" "}
+                    {lastRefresh.toLocaleTimeString("en-US", {
+                      timeZone: "Asia/Colombo",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      second: "2-digit",
+                      hour12: true,
+                    })}
+                  </p>
+                )}
+              </div>
             </div>
+            {displayedEvents.length === 0 ? (
+              <div className="px-6 py-12 text-center">
+                <p className="text-sm font-medium text-slate-700">
+                  No latecomers today
+                </p>
+                <p className="text-xs text-slate-500 mt-1">
+                  Every morning sign-in so far was on time.
+                </p>
+              </div>
+            ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
@@ -435,7 +475,7 @@ export default function AttendancePage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {events.map((event, idx) => (
+                  {displayedEvents.map((event, idx) => (
                     <tr
                       key={`${event.pin}-${event.timestamp}-${idx}`}
                       className="hover:bg-slate-50/50 transition-colors"
@@ -465,10 +505,7 @@ export default function AttendancePage() {
                           <span className="text-sm font-mono font-medium text-slate-700">
                             {toSriLankanTime(event.timestamp)}
                           </span>
-                          {(event.late ??
-                            isMorningLate(
-                              event.timestamp.split(" ")[1] || ""
-                            )) && (
+                          {eventIsLate(event) && (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-600 text-white">
                               LATE
                             </span>
@@ -495,6 +532,7 @@ export default function AttendancePage() {
                 </tbody>
               </table>
             </div>
+            )}
           </div>
         )}
 

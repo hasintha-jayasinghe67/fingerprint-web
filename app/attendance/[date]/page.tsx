@@ -139,14 +139,22 @@ function avatarChar(name: string): string {
 }
 
 function normalizeMatchKey(value: string): string {
-  return value.trim().toLowerCase();
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
+/** Split on newlines, commas, or semicolons (Excel / list pastes). */
 function parseExcuseLines(text: string): string[] {
-  return text
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
+  const seen = new Set<string>();
+  const lines: string[] = [];
+  for (const part of text.split(/[\r\n,;]+/)) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+    const key = normalizeMatchKey(trimmed);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    lines.push(trimmed);
+  }
+  return lines;
 }
 
 function prefectMatchesLine(entry: GateEntry, line: string): boolean {
@@ -154,11 +162,30 @@ function prefectMatchesLine(entry: GateEntry, line: string): boolean {
   if (!key) return false;
   if (normalizeMatchKey(entry.name) === key) return true;
   if (entry.code && normalizeMatchKey(entry.code) === key) return true;
+  if (normalizeMatchKey(entry.pin) === key) return true;
   return false;
 }
 
 function isUnmarked(status: string | null | undefined): boolean {
   return !status || status === "To be marked";
+}
+
+/** Statuses ES/EG lists are allowed to replace. */
+function canApplyExcuse(
+  status: string,
+  kind: "ES" | "EG"
+): boolean {
+  if (status === "Present") return false;
+  if (status === "Late") return kind === "EG";
+  // Traitor / Absent / To be marked / empty — excuses may still be applied
+  // after a prior Excuse run (which marks leftovers as Traitor).
+  return (
+    isUnmarked(status) ||
+    status === "Traitor" ||
+    status === "Absent" ||
+    status === "ES" ||
+    status === "EG"
+  );
 }
 
 /**
@@ -168,7 +195,8 @@ function isUnmarked(status: string | null | undefined): boolean {
  * Rules:
  * - Present is never overwritten
  * - Late may be overwritten by EG only
- * - ES / EG only fill unmarked statuses (except Late → EG above)
+ * - ES / EG may overwrite Traitor / Absent / unmarked (so lists work after
+ *   a previous Excuse pass)
  * - Anyone still not Present / Late / Absent / ES / EG becomes Traitor
  */
 function applyExcuses(
@@ -176,26 +204,36 @@ function applyExcuses(
   currentStatuses: Record<number, string>,
   esText: string,
   egText: string
-): Record<number, string> {
+): { next: Record<number, string>; unmatched: string[] } {
   const next: Record<number, string> = { ...currentStatuses };
   const esLines = parseExcuseLines(esText);
   const egLines = parseExcuseLines(egText);
+  const matchedKeys = new Set<string>();
 
   for (const entry of entries) {
     const current = next[entry.prefectId] ?? entry.status ?? "";
-    if (current === "Present") continue;
     const inEs = esLines.some((line) => prefectMatchesLine(entry, line));
-    if (inEs && isUnmarked(current)) {
+    if (!inEs) continue;
+    for (const line of esLines) {
+      if (prefectMatchesLine(entry, line)) {
+        matchedKeys.add(normalizeMatchKey(line));
+      }
+    }
+    if (canApplyExcuse(current, "ES")) {
       next[entry.prefectId] = "ES";
     }
   }
 
   for (const entry of entries) {
     const current = next[entry.prefectId] ?? entry.status ?? "";
-    if (current === "Present") continue;
     const inEg = egLines.some((line) => prefectMatchesLine(entry, line));
     if (!inEg) continue;
-    if (current === "Late" || isUnmarked(current)) {
+    for (const line of egLines) {
+      if (prefectMatchesLine(entry, line)) {
+        matchedKeys.add(normalizeMatchKey(line));
+      }
+    }
+    if (canApplyExcuse(current, "EG")) {
       next[entry.prefectId] = "EG";
     }
   }
@@ -207,7 +245,24 @@ function applyExcuses(
     }
   }
 
-  return next;
+  const unmatched = [...esLines, ...egLines].filter(
+    (line) => !matchedKeys.has(normalizeMatchKey(line))
+  );
+
+  return { next, unmatched };
+}
+
+/** Rebuild an ES/EG textarea from prefects currently marked with that status. */
+function buildExcuseListFromStatuses(
+  entries: GateEntry[],
+  statusOf: (entry: GateEntry) => string,
+  status: "ES" | "EG"
+): string {
+  return entries
+    .filter((entry) => statusOf(entry) === status)
+    .map((entry) => (entry.code || entry.name || entry.pin).trim())
+    .filter(Boolean)
+    .join("\n");
 }
 
 // -------------------------------------------------------
@@ -240,6 +295,7 @@ export default function AttendanceDateDetailPage() {
   const [egList, setEgList] = useState("");
   const [excusing, setExcusing] = useState(false);
   const [excuseError, setExcuseError] = useState<string | null>(null);
+  const [showLatecomers, setShowLatecomers] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (!date) return;
@@ -349,12 +405,24 @@ export default function AttendanceDateDetailPage() {
           "To be marked";
       }
 
-      const nextStatuses = applyExcuses(
+      const { next: nextStatuses, unmatched } = applyExcuses(
         data.gateEntries,
         currentStatuses,
         esList,
         egList
       );
+
+      const esCount = parseExcuseLines(esList).length;
+      const egCount = parseExcuseLines(egList).length;
+      if (esCount === 0 && egCount === 0) {
+        throw new Error("Enter at least one code, name, or PIN in ES or EG.");
+      }
+
+      if (unmatched.length > 0) {
+        throw new Error(
+          `No prefect matched: ${unmatched.join(", ")}. Use exact code, full name, or PIN.`
+        );
+      }
 
       const entries = data.gateEntries.map((entry) => ({
         prefectId: entry.prefectId,
@@ -378,8 +446,6 @@ export default function AttendanceDateDetailPage() {
         `Excuses applied for ${formatDateDisplay(data.date)}. Unmarked prefects were set to Traitor.`
       );
       setExcusesOpen(false);
-      setEsList("");
-      setEgList("");
       await fetchData();
     } catch (err) {
       setExcuseError(err instanceof Error ? err.message : "Unknown error");
@@ -387,6 +453,19 @@ export default function AttendanceDateDetailPage() {
       setExcusing(false);
       setSaving(false);
     }
+  }
+
+  function openExcusesModal() {
+    if (!data) return;
+    const statusOf = (entry: GateEntry) =>
+      drafts[entry.prefectId] ??
+      entry.status ??
+      entry.defaultStatus ??
+      "To be marked";
+    setEsList(buildExcuseListFromStatuses(data.gateEntries, statusOf, "ES"));
+    setEgList(buildExcuseListFromStatuses(data.gateEntries, statusOf, "EG"));
+    setExcuseError(null);
+    setExcusesOpen(true);
   }
 
   function gateValue(entry: GateEntry): string {
@@ -405,10 +484,16 @@ export default function AttendanceDateDetailPage() {
   const morning = data?.slots.morning || [];
   const second = data?.slots.second || [];
   const third = data?.slots.third || [];
-  const lateCount = morning.filter((m) => m.late).length;
+  const latecomers = morning.filter((m) => m.late);
+  const lateCount = latecomers.length;
+  const displayedMorning = showLatecomers ? latecomers : morning;
   const gateSaved = !!data?.gateSaved;
   const showExcuseButton = gateSaved && canWrite;
   const showStatusSelects = canEditStatuses;
+  const hasExistingExcuses = (data?.gateEntries || []).some((entry) => {
+    const status = gateValue(entry);
+    return status === "ES" || status === "EG";
+  });
 
   const gateCounts: Record<string, number> = {};
   for (const entry of data?.gateEntries || []) {
@@ -553,6 +638,22 @@ export default function AttendanceDateDetailPage() {
                   </div>
                 </div>
 
+                <div className="mb-4 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setShowLatecomers((v) => !v)}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${
+                      showLatecomers
+                        ? "bg-red-50 text-red-700 border-red-200"
+                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                    }`}
+                  >
+                    {showLatecomers
+                      ? "Show all"
+                      : `Show latecomers${lateCount > 0 ? ` (${lateCount})` : ""}`}
+                  </button>
+                </div>
+
                 {/* Morning sign-in table */}
                 {morning.length === 0 ? (
                   <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-10 text-center">
@@ -564,9 +665,22 @@ export default function AttendanceDateDetailPage() {
                       AM appear here.
                     </p>
                   </div>
+                ) : showLatecomers && displayedMorning.length === 0 ? (
+                  <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-10 text-center">
+                    <h3 className="text-lg font-semibold text-slate-700">
+                      No latecomers on this date
+                    </h3>
+                    <p className="text-sm text-slate-500 mt-1">
+                      Every morning sign-in was on time.
+                    </p>
+                  </div>
                 ) : (
                   <SignInTable
-                    title={`Morning Check-in Times (${morning.length})`}
+                    title={
+                      showLatecomers
+                        ? `Latecomers (${displayedMorning.length})`
+                        : `Morning Check-in Times (${morning.length})`
+                    }
                     subtitle={
                       (data.batches || []).length > 0
                         ? `Batch gate/extended: ${(data.batches || [])
@@ -577,11 +691,12 @@ export default function AttendanceDateDetailPage() {
                             .join(" · ")}; otherwise after 7:00 AM`
                         : "Late after 7:00 AM"
                     }
-                    entries={morning}
+                    entries={displayedMorning}
                   />
                 )}
 
-                {/* Other two daily sign-in slots */}
+                {/* Other two daily sign-in slots (hidden while filtering latecomers) */}
+                {!showLatecomers && (
                 <div className="mt-6 space-y-6">
                   {second.length > 0 && (
                     <SignInTable
@@ -600,6 +715,7 @@ export default function AttendanceDateDetailPage() {
                     />
                   )}
                 </div>
+                )}
               </div>
             )}
 
@@ -665,13 +781,10 @@ export default function AttendanceDateDetailPage() {
                       {showExcuseButton && (
                         <button
                           type="button"
-                          onClick={() => {
-                            setExcuseError(null);
-                            setExcusesOpen(true);
-                          }}
+                          onClick={openExcusesModal}
                           className="px-5 py-2.5 rounded-md bg-white text-slate-800 text-sm font-semibold border border-slate-300 hover:bg-slate-50 transition-colors"
                         >
-                          Add excuses
+                          {hasExistingExcuses ? "Edit excuses" : "Add excuses"}
                         </button>
                       )}
                       {showStatusSelects && (
@@ -781,9 +894,10 @@ export default function AttendanceDateDetailPage() {
       >
         <div className="flex flex-col gap-4">
           <p className="text-sm text-slate-500">
-            Enter one prefect code or name per line. Present is never changed.
-            Late may be overwritten by EG. Remaining unmarked prefects become
-            Traitor.
+            Enter one prefect code, full name, or PIN per line (commas also
+            work). Present is never changed. Late may be overwritten by EG.
+            Traitor / unmarked prefects in the lists become ES or EG. Remaining
+            unmarked prefects become Traitor.
           </p>
 
           <div className="flex flex-col gap-1.5">
@@ -795,7 +909,7 @@ export default function AttendanceDateDetailPage() {
               rows={EXCUSE_TEXTAREA_ROWS}
               value={esList}
               onChange={(e) => setEsList(e.target.value)}
-              placeholder={"One code or name per line"}
+              placeholder={"One code, name, or PIN per line"}
               className="w-full px-3 py-2 rounded-md border border-slate-300 text-sm font-mono text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/40 resize-none overflow-y-auto"
             />
           </div>
@@ -809,7 +923,7 @@ export default function AttendanceDateDetailPage() {
               rows={EXCUSE_TEXTAREA_ROWS}
               value={egList}
               onChange={(e) => setEgList(e.target.value)}
-              placeholder={"One code or name per line"}
+              placeholder={"One code, name, or PIN per line"}
               className="w-full px-3 py-2 rounded-md border border-slate-300 text-sm font-mono text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/40 resize-none overflow-y-auto"
             />
           </div>
