@@ -14,6 +14,7 @@ import {
   IconCheck,
   IconWarning,
 } from "@/components/icons";
+import { GATE_STATUSES, GATE_STATUS_STYLES } from "@/lib/gateStatuses";
 
 // -------------------------------------------------------
 // Types
@@ -75,16 +76,6 @@ const GATE_DUTY_TABS: { id: GateDutyTab; label: string }[] = [
   { id: "all", label: "All" },
 ];
 
-const GATE_STATUSES = [
-  "To be marked",
-  "Present",
-  "Absent",
-  "Late",
-  "EG",
-  "ES",
-  "Traitor",
-];
-
 const MARKED_STATUSES = new Set([
   "Present",
   "Absent",
@@ -92,16 +83,6 @@ const MARKED_STATUSES = new Set([
   "EG",
   "ES",
 ]);
-
-const GATE_STATUS_STYLES: Record<string, string> = {
-  Present: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  Absent: "bg-red-50 text-red-700 border-red-200",
-  Late: "bg-amber-50 text-amber-700 border-amber-200",
-  EG: "bg-sky-50 text-sky-700 border-sky-200",
-  ES: "bg-slate-100 text-slate-700 border-slate-200",
-  Traitor: "bg-rose-50 text-rose-700 border-rose-200",
-  "To be marked": "bg-slate-50 text-slate-500 border-slate-200",
-};
 
 const EXCUSE_TEXTAREA_ROWS = 8;
 
@@ -138,8 +119,15 @@ function avatarChar(name: string): string {
   return (name || "?").charAt(0).toUpperCase();
 }
 
+/**
+ * Format-insensitive key so pasted lists match DB values stored either way:
+ * "M. A. Khan" == "M.A. Khan" == "MA Khan", "HP. 001" == "HP001".
+ */
 function normalizeMatchKey(value: string): string {
-  return value.trim().toLowerCase().replace(/\s+/g, " ");
+  return value
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "");
 }
 
 /** Split on newlines, commas, or semicolons (Excel / list pastes). */
@@ -420,7 +408,7 @@ export default function AttendanceDateDetailPage() {
 
       if (unmatched.length > 0) {
         throw new Error(
-          `No prefect matched: ${unmatched.join(", ")}. Use exact code, full name, or PIN.`
+          `No prefect matched: ${unmatched.join(", ")}. Use code, full name, or PIN.`
         );
       }
 

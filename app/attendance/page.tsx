@@ -112,6 +112,12 @@ export default function AttendanceDatesPage() {
                 Settings
               </Link>
             </HeaderMenu>
+            <Link
+              href="/attendance/general"
+              className="px-3 py-1.5 rounded-md text-xs font-medium bg-brand-600 text-white hover:bg-brand-700 transition-colors"
+            >
+              General Attendance
+            </Link>
             <button
               onClick={() => {
                 setLoading(true);
