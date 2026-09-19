@@ -67,13 +67,14 @@ interface DayData {
 }
 
 type Tab = "morning" | "gate";
-type GateDutyTab = "MG" | "PG" | "PBG" | "all";
+type GateDutyTab = "MG" | "PG" | "PBG" | "all" | "traitors";
 
 const GATE_DUTY_TABS: { id: GateDutyTab; label: string }[] = [
   { id: "MG", label: "Main Gate" },
   { id: "PG", label: "Pool Gate" },
   { id: "PBG", label: "Palm Beach Gate" },
   { id: "all", label: "All" },
+  { id: "traitors", label: "Traitors" },
 ];
 
 const EXCUSE_TEXTAREA_ROWS = 8;
@@ -361,15 +362,18 @@ export default function AttendanceDateDetailPage() {
 
   const visibleGateEntries = (data?.gateEntries || []).filter((entry) => {
     if (gateDutyTab === "all") return true;
+    if (gateDutyTab === "traitors") return gateValue(entry) === "Traitor";
     return entry.gateAssignment === gateDutyTab && entry.signedIn;
   });
 
   const gateDutyEmptyMessage =
     gateDutyTab === "all"
       ? "No prefects registered yet. Add house prefects first."
-      : `No signed-in prefects are assigned to ${
-          GATE_DUTY_TABS.find((t) => t.id === gateDutyTab)?.label || "this gate"
-        } for this day.`;
+      : gateDutyTab === "traitors"
+        ? "No traitors marked for this day."
+        : `No signed-in prefects are assigned to ${
+            GATE_DUTY_TABS.find((t) => t.id === gateDutyTab)?.label || "this gate"
+          } for this day.`;
 
   return (
     <div className="min-h-screen">
@@ -673,10 +677,14 @@ export default function AttendanceDateDetailPage() {
                         const count =
                           tab.id === "all"
                             ? data.gateEntries.length
-                            : data.gateEntries.filter(
-                                (e) =>
-                                  e.gateAssignment === tab.id && e.signedIn
-                              ).length;
+                            : tab.id === "traitors"
+                              ? data.gateEntries.filter(
+                                  (e) => gateValue(e) === "Traitor"
+                                ).length
+                              : data.gateEntries.filter(
+                                  (e) =>
+                                    e.gateAssignment === tab.id && e.signedIn
+                                ).length;
                         const active = gateDutyTab === tab.id;
                         return (
                           <button
@@ -685,14 +693,20 @@ export default function AttendanceDateDetailPage() {
                             onClick={() => setGateDutyTab(tab.id)}
                             className={`shrink-0 px-3 sm:px-4 py-2 text-sm font-medium rounded-t-md border-b-2 transition-colors ${
                               active
-                                ? "border-brand-600 text-brand-700 bg-brand-50/60"
+                                ? tab.id === "traitors"
+                                  ? "border-rose-600 text-rose-700 bg-rose-50/60"
+                                  : "border-brand-600 text-brand-700 bg-brand-50/60"
                                 : "border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                             }`}
                           >
                             {tab.label}
                             <span
                               className={`ml-1.5 text-[11px] ${
-                                active ? "text-brand-600" : "text-slate-400"
+                                active
+                                  ? tab.id === "traitors"
+                                    ? "text-rose-600"
+                                    : "text-brand-600"
+                                  : "text-slate-400"
                               }`}
                             >
                               {count}
@@ -701,7 +715,7 @@ export default function AttendanceDateDetailPage() {
                         );
                       })}
                     </div>
-                    {gateDutyTab !== "all" && (
+                    {gateDutyTab !== "all" && gateDutyTab !== "traitors" && (
                       <p className="text-xs text-slate-400 pb-3 pt-1">
                         Prefects assigned to this gate today who have already
                         signed in. Status changes sync to the All tab.
@@ -711,6 +725,12 @@ export default function AttendanceDateDetailPage() {
                       <p className="text-xs text-slate-400 pb-3 pt-1">
                         All house prefects. Statuses stay in sync with the gate
                         tabs.
+                      </p>
+                    )}
+                    {gateDutyTab === "traitors" && (
+                      <p className="text-xs text-slate-400 pb-3 pt-1">
+                        Prefects marked Traitor for this day (typically after
+                        excuses are applied).
                       </p>
                     )}
                   </div>
