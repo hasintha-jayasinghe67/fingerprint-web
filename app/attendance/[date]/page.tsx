@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { apiUrl } from "@/lib/api";
@@ -76,14 +76,6 @@ const GATE_DUTY_TABS: { id: GateDutyTab; label: string }[] = [
   { id: "all", label: "All" },
 ];
 
-const MARKED_STATUSES = new Set([
-  "Present",
-  "Absent",
-  "Late",
-  "EG",
-  "ES",
-]);
-
 const EXCUSE_TEXTAREA_ROWS = 8;
 
 // -------------------------------------------------------
@@ -117,127 +109,6 @@ function toTimeNoSeconds(time: string): string {
 
 function avatarChar(name: string): string {
   return (name || "?").charAt(0).toUpperCase();
-}
-
-/**
- * Format-insensitive key so pasted lists match DB values stored either way:
- * "M. A. Khan" == "M.A. Khan" == "MA Khan", "HP. 001" == "HP001".
- */
-function normalizeMatchKey(value: string): string {
-  return value
-    .normalize("NFKC")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "");
-}
-
-/** Split on newlines, commas, or semicolons (Excel / list pastes). */
-function parseExcuseLines(text: string): string[] {
-  const seen = new Set<string>();
-  const lines: string[] = [];
-  for (const part of text.split(/[\r\n,;]+/)) {
-    const trimmed = part.trim();
-    if (!trimmed) continue;
-    const key = normalizeMatchKey(trimmed);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    lines.push(trimmed);
-  }
-  return lines;
-}
-
-function prefectMatchesLine(entry: GateEntry, line: string): boolean {
-  const key = normalizeMatchKey(line);
-  if (!key) return false;
-  if (normalizeMatchKey(entry.name) === key) return true;
-  if (entry.code && normalizeMatchKey(entry.code) === key) return true;
-  if (normalizeMatchKey(entry.pin) === key) return true;
-  return false;
-}
-
-function isUnmarked(status: string | null | undefined): boolean {
-  return !status || status === "To be marked";
-}
-
-/** Statuses ES/EG lists are allowed to replace. */
-function canApplyExcuse(
-  status: string,
-  kind: "ES" | "EG"
-): boolean {
-  if (status === "Present") return false;
-  if (status === "Late") return kind === "EG";
-  // Traitor / Absent / To be marked / empty — excuses may still be applied
-  // after a prior Excuse run (which marks leftovers as Traitor).
-  return (
-    isUnmarked(status) ||
-    status === "Traitor" ||
-    status === "Absent" ||
-    status === "ES" ||
-    status === "EG"
-  );
-}
-
-/**
- * Apply ES / EG lists to current statuses, then mark remaining unmarked
- * prefects as Traitor.
- *
- * Rules:
- * - Present is never overwritten
- * - Late may be overwritten by EG only
- * - ES / EG may overwrite Traitor / Absent / unmarked (so lists work after
- *   a previous Excuse pass)
- * - Anyone still not Present / Late / Absent / ES / EG becomes Traitor
- */
-function applyExcuses(
-  entries: GateEntry[],
-  currentStatuses: Record<number, string>,
-  esText: string,
-  egText: string
-): { next: Record<number, string>; unmatched: string[] } {
-  const next: Record<number, string> = { ...currentStatuses };
-  const esLines = parseExcuseLines(esText);
-  const egLines = parseExcuseLines(egText);
-  const matchedKeys = new Set<string>();
-
-  for (const entry of entries) {
-    const current = next[entry.prefectId] ?? entry.status ?? "";
-    const inEs = esLines.some((line) => prefectMatchesLine(entry, line));
-    if (!inEs) continue;
-    for (const line of esLines) {
-      if (prefectMatchesLine(entry, line)) {
-        matchedKeys.add(normalizeMatchKey(line));
-      }
-    }
-    if (canApplyExcuse(current, "ES")) {
-      next[entry.prefectId] = "ES";
-    }
-  }
-
-  for (const entry of entries) {
-    const current = next[entry.prefectId] ?? entry.status ?? "";
-    const inEg = egLines.some((line) => prefectMatchesLine(entry, line));
-    if (!inEg) continue;
-    for (const line of egLines) {
-      if (prefectMatchesLine(entry, line)) {
-        matchedKeys.add(normalizeMatchKey(line));
-      }
-    }
-    if (canApplyExcuse(current, "EG")) {
-      next[entry.prefectId] = "EG";
-    }
-  }
-
-  for (const entry of entries) {
-    const current = next[entry.prefectId] ?? entry.status ?? "";
-    if (!MARKED_STATUSES.has(current)) {
-      next[entry.prefectId] = "Traitor";
-    }
-  }
-
-  const unmatched = [...esLines, ...egLines].filter(
-    (line) => !matchedKeys.has(normalizeMatchKey(line))
-  );
-
-  return { next, unmatched };
 }
 
 /** Rebuild an ES/EG textarea from prefects currently marked with that status. */
@@ -284,12 +155,16 @@ export default function AttendanceDateDetailPage() {
   const [excusing, setExcusing] = useState(false);
   const [excuseError, setExcuseError] = useState<string | null>(null);
   const [showLatecomers, setShowLatecomers] = useState(false);
+  const esTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const egTextareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (options?: { silent?: boolean }) => {
     if (!date) return;
     try {
-      setLoading(true);
-      setError(null);
+      if (!options?.silent) {
+        setLoading(true);
+        setError(null);
+      }
 
       const res = await fetch(apiUrl(`/api/attendance/date/${date}`));
       if (!res.ok) throw new Error("Failed to fetch attendance records");
@@ -297,12 +172,14 @@ export default function AttendanceDateDetailPage() {
       const json = await res.json();
       setData(json);
       setDrafts({});
-      setSaveNotice(null);
-      setSaveError(null);
+      if (!options?.silent) {
+        setSaveNotice(null);
+        setSaveError(null);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
-      setLoading(false);
+      if (!options?.silent) setLoading(false);
     }
   }, [date]);
 
@@ -384,57 +261,50 @@ export default function AttendanceDateDetailPage() {
     setExcuseError(null);
 
     try {
-      const currentStatuses: Record<number, string> = {};
-      for (const entry of data.gateEntries) {
-        currentStatuses[entry.prefectId] =
-          drafts[entry.prefectId] ??
-          entry.status ??
-          entry.defaultStatus ??
-          "To be marked";
-      }
+      // Prefer live DOM values so paste + click cannot race React state.
+      const esText = esTextareaRef.current?.value ?? esList;
+      const egText = egTextareaRef.current?.value ?? egList;
+      setEsList(esText);
+      setEgList(egText);
 
-      const { next: nextStatuses, unmatched } = applyExcuses(
-        data.gateEntries,
-        currentStatuses,
-        esList,
-        egList
-      );
-
-      const esCount = parseExcuseLines(esList).length;
-      const egCount = parseExcuseLines(egList).length;
-      if (esCount === 0 && egCount === 0) {
+      if (!esText.trim() && !egText.trim()) {
         throw new Error("Enter at least one code, name, or PIN in ES or EG.");
       }
 
-      if (unmatched.length > 0) {
+      setSaving(true);
+      setSaveError(null);
+      const res = await fetch(
+        apiUrl(`/api/gate-attendance/${data.date}/excuses`),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ es: esText, eg: egText }),
+        }
+      );
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
         throw new Error(
-          `No prefect matched: ${unmatched.join(", ")}. Use code, full name, or PIN.`
+          (json && json.error) || "Failed to apply excuses"
         );
       }
 
-      const entries = data.gateEntries.map((entry) => ({
-        prefectId: entry.prefectId,
-        status: nextStatuses[entry.prefectId] ?? "Traitor",
-      }));
+      const appliedEs = Number(json.appliedEs) || 0;
+      const appliedEg = Number(json.appliedEg) || 0;
+      const unmatched: string[] = Array.isArray(json.unmatched)
+        ? json.unmatched
+        : [];
 
-      // Persist directly so modal errors stay in the dialog
-      setSaving(true);
-      setSaveError(null);
-      const res = await fetch(apiUrl(`/api/gate-attendance/${data.date}`), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ entries, force: true }),
-      });
-      const json = await res.json();
-      if (!res.ok) {
-        throw new Error(json.error || "Failed to apply excuses");
-      }
-
+      const unmatchedNote =
+        unmatched.length > 0
+          ? ` Unmatched (skipped, Traitor fill not run): ${unmatched.slice(0, 6).join(", ")}${unmatched.length > 6 ? "…" : ""}.`
+          : "";
       setSaveNotice(
-        `Excuses applied for ${formatDateDisplay(data.date)}. Unmarked prefects were set to Traitor.`
+        unmatched.length > 0
+          ? `Applied ES to ${appliedEs} and EG to ${appliedEg} prefect(s).${unmatchedNote}`
+          : `Applied ES to ${appliedEs} and EG to ${appliedEg} prefect(s). Unmarked leftovers set to Traitor.`
       );
       setExcusesOpen(false);
-      await fetchData();
+      await fetchData({ silent: true });
     } catch (err) {
       setExcuseError(err instanceof Error ? err.message : "Unknown error");
     } finally {
@@ -882,10 +752,11 @@ export default function AttendanceDateDetailPage() {
       >
         <div className="flex flex-col gap-4">
           <p className="text-sm text-slate-500">
-            Enter one prefect code, full name, or PIN per line (commas also
-            work). Present is never changed. Late may be overwritten by EG.
-            Traitor / unmarked prefects in the lists become ES or EG. Remaining
-            unmarked prefects become Traitor.
+            Enter one prefect code, full name, surname, or PIN per line
+            (commas also work). Prefects in these lists become ES or EG
+            (including those currently Present). Late may be overwritten by EG
+            only. When every line matches, remaining unmarked prefects become
+            Traitor.
           </p>
 
           <div className="flex flex-col gap-1.5">
@@ -894,6 +765,7 @@ export default function AttendanceDateDetailPage() {
             </label>
             <textarea
               id="excuse-es"
+              ref={esTextareaRef}
               rows={EXCUSE_TEXTAREA_ROWS}
               value={esList}
               onChange={(e) => setEsList(e.target.value)}
@@ -908,6 +780,7 @@ export default function AttendanceDateDetailPage() {
             </label>
             <textarea
               id="excuse-eg"
+              ref={egTextareaRef}
               rows={EXCUSE_TEXTAREA_ROWS}
               value={egList}
               onChange={(e) => setEgList(e.target.value)}
