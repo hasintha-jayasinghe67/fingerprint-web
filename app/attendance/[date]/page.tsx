@@ -21,6 +21,7 @@ import { GATE_STATUSES, GATE_STATUS_STYLES } from "@/lib/gateStatuses";
 // -------------------------------------------------------
 
 interface SlotEntry {
+  prefectId?: number;
   pin: string;
   name: string;
   class: string | null;
@@ -28,6 +29,23 @@ interface SlotEntry {
   registered: boolean;
   time: string;
   late: boolean;
+}
+
+interface SlotAttendanceEntry {
+  prefectId: number;
+  pin: string;
+  name: string;
+  class: string | null;
+  code: string | null;
+  registered: boolean;
+  time: string | null;
+  status: string | null;
+  defaultStatus: "Present" | "Absent";
+}
+
+interface SlotAttendanceBlock {
+  saved: boolean;
+  entries: SlotAttendanceEntry[];
 }
 
 interface GateEntry {
@@ -64,10 +82,17 @@ interface DayData {
     second: SlotEntry[];
     third: SlotEntry[];
   };
+  slotAttendance: {
+    second: SlotAttendanceBlock;
+    third: SlotAttendanceBlock;
+  };
 }
 
-type Tab = "morning" | "gate";
+type Tab = "morning" | "second" | "third" | "gate";
 type GateDutyTab = "MG" | "PG" | "PBG" | "all" | "traitors";
+type AttendanceSlot = "second" | "third";
+
+const SLOT_STATUSES = ["Present", "Absent"] as const;
 
 const GATE_DUTY_TABS: { id: GateDutyTab; label: string }[] = [
   { id: "MG", label: "Main Gate" },
@@ -145,6 +170,10 @@ export default function AttendanceDateDetailPage() {
 
   // Gate attendance draft
   const [drafts, setDrafts] = useState<Record<number, string>>({});
+  const [slotDrafts, setSlotDrafts] = useState<{
+    second: Record<number, string>;
+    third: Record<number, string>;
+  }>({ second: {}, third: {} });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
@@ -173,6 +202,7 @@ export default function AttendanceDateDetailPage() {
       const json = await res.json();
       setData(json);
       setDrafts({});
+      setSlotDrafts({ second: {}, third: {} });
       if (!options?.silent) {
         setSaveNotice(null);
         setSaveError(null);
@@ -188,9 +218,20 @@ export default function AttendanceDateDetailPage() {
     fetchData();
   }, [fetchData]);
 
+  useEffect(() => {
+    setSaveError(null);
+    setSaveNotice(null);
+  }, [activeTab]);
+
   // Editable when unsaved, or when superuser after save
   const canEditStatuses =
     !!data && (!data.gateSaved || canEditAfterSave) && canWrite;
+
+  function canEditSlot(slot: AttendanceSlot): boolean {
+    if (!data || !canWrite) return false;
+    const saved = data.slotAttendance?.[slot]?.saved;
+    return !saved || canEditAfterSave;
+  }
 
   // -------------------------------------------------------
   // Gate attendance save
@@ -336,6 +377,61 @@ export default function AttendanceDateDetailPage() {
     );
   }
 
+  function slotValue(slot: AttendanceSlot, entry: SlotAttendanceEntry): string {
+    return (
+      slotDrafts[slot][entry.prefectId] ??
+      entry.status ??
+      entry.defaultStatus ??
+      "Absent"
+    );
+  }
+
+  async function handleSaveSlot(slot: AttendanceSlot) {
+    if (!data || !canEditSlot(slot)) return;
+    const block = data.slotAttendance?.[slot];
+    if (!block) return;
+
+    const entries = block.entries.map((entry) => ({
+      prefectId: entry.prefectId,
+      status: slotValue(slot, entry),
+    }));
+
+    setSaving(true);
+    setSaveError(null);
+    setSaveNotice(null);
+
+    const label = slot === "second" ? "11:15" : "1:30";
+
+    try {
+      const res = await fetch(
+        apiUrl(`/api/slot-attendance/${data.date}/${slot}`),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            entries,
+            force: block.saved && canEditAfterSave,
+          }),
+        }
+      );
+      const json = await res.json();
+      if (!res.ok) {
+        if (res.status === 409) await fetchData();
+        throw new Error(json.error || `Failed to save ${label} attendance`);
+      }
+      setSaveNotice(
+        block.saved
+          ? `${label} attendance updated for ${formatDateDisplay(data.date)}.`
+          : `${label} attendance saved for ${formatDateDisplay(data.date)}.`
+      );
+      await fetchData();
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   // -------------------------------------------------------
   // Derived
   // -------------------------------------------------------
@@ -346,6 +442,8 @@ export default function AttendanceDateDetailPage() {
   const latecomers = morning.filter((m) => m.late);
   const lateCount = latecomers.length;
   const displayedMorning = showLatecomers ? latecomers : morning;
+  const secondAttendance = data?.slotAttendance?.second;
+  const thirdAttendance = data?.slotAttendance?.third;
   const gateSaved = !!data?.gateSaved;
   const showExcuseButton = gateSaved && canWrite;
   const showStatusSelects = canEditStatuses;
@@ -446,6 +544,36 @@ export default function AttendanceDateDetailPage() {
                 Morning Check-in
               </button>
               <button
+                onClick={() => setActiveTab("second")}
+                className={`flex-1 px-4 sm:px-5 py-2.5 rounded-md text-sm font-semibold transition-colors ${
+                  activeTab === "second"
+                    ? "bg-slate-800 text-white"
+                    : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+                }`}
+              >
+                11.15 Sign-in
+                {secondAttendance?.saved && (
+                  <span className="ml-2 px-1.5 py-0.5 rounded-full text-[10px] bg-emerald-600 text-white align-middle">
+                    Saved
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab("third")}
+                className={`flex-1 px-4 sm:px-5 py-2.5 rounded-md text-sm font-semibold transition-colors ${
+                  activeTab === "third"
+                    ? "bg-slate-800 text-white"
+                    : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+                }`}
+              >
+                1.30 Sign-in
+                {thirdAttendance?.saved && (
+                  <span className="ml-2 px-1.5 py-0.5 rounded-full text-[10px] bg-emerald-600 text-white align-middle">
+                    Saved
+                  </span>
+                )}
+              </button>
+              <button
                 onClick={() => setActiveTab("gate")}
                 className={`flex-1 px-4 sm:px-5 py-2.5 rounded-md text-sm font-semibold transition-colors ${
                   activeTab === "gate"
@@ -523,7 +651,7 @@ export default function AttendanceDateDetailPage() {
                       No morning sign-ins on this date
                     </h3>
                     <p className="text-sm text-slate-500 mt-1">
-                      House prefects who scanned their fingerprint before 11:00
+                      House prefects who scanned their fingerprint before 10:50
                       AM appear here.
                     </p>
                   </div>
@@ -556,29 +684,55 @@ export default function AttendanceDateDetailPage() {
                     entries={displayedMorning}
                   />
                 )}
-
-                {/* Other two daily sign-in slots (hidden while filtering latecomers) */}
-                {!showLatecomers && (
-                <div className="mt-6 space-y-6">
-                  {second.length > 0 && (
-                    <SignInTable
-                      title={`11:15 Sign-in (${second.length})`}
-                      subtitle="Scans from 11:00 AM onwards"
-                      entries={second}
-                      showStatus={false}
-                    />
-                  )}
-                  {third.length > 0 && (
-                    <SignInTable
-                      title={`1:30 Sign-in (${third.length})`}
-                      subtitle="Scans from 1:20 PM onwards"
-                      entries={third}
-                      showStatus={false}
-                    />
-                  )}
-                </div>
-                )}
               </div>
+            )}
+
+            {/* ================= 11.15 Sign-in tab ================= */}
+            {activeTab === "second" && secondAttendance && (
+              <SlotAttendancePanel
+                label="11:15"
+                cutoffCopy="After 10:50 AM"
+                block={secondAttendance}
+                signedInCount={second.length}
+                slotValue={(entry) => slotValue("second", entry)}
+                canEdit={canEditSlot("second")}
+                canWrite={canWrite}
+                saving={saving}
+                saveError={activeTab === "second" ? saveError : null}
+                saveNotice={activeTab === "second" ? saveNotice : null}
+                onStatusChange={(prefectId, status) =>
+                  setSlotDrafts((prev) => ({
+                    ...prev,
+                    second: { ...prev.second, [prefectId]: status },
+                  }))
+                }
+                onSave={() => handleSaveSlot("second")}
+                canEditAfterSave={canEditAfterSave}
+              />
+            )}
+
+            {/* ================= 1.30 Sign-in tab ================= */}
+            {activeTab === "third" && thirdAttendance && (
+              <SlotAttendancePanel
+                label="1:30"
+                cutoffCopy="After 1:15 PM"
+                block={thirdAttendance}
+                signedInCount={third.length}
+                slotValue={(entry) => slotValue("third", entry)}
+                canEdit={canEditSlot("third")}
+                canWrite={canWrite}
+                saving={saving}
+                saveError={activeTab === "third" ? saveError : null}
+                saveNotice={activeTab === "third" ? saveNotice : null}
+                onStatusChange={(prefectId, status) =>
+                  setSlotDrafts((prev) => ({
+                    ...prev,
+                    third: { ...prev.third, [prefectId]: status },
+                  }))
+                }
+                onSave={() => handleSaveSlot("third")}
+                canEditAfterSave={canEditAfterSave}
+              />
             )}
 
             {/* ================= Gate Attendance tab ================= */}
@@ -835,6 +989,231 @@ export default function AttendanceDateDetailPage() {
           </div>
         </div>
       </Modal>
+    </div>
+  );
+}
+
+// -------------------------------------------------------
+// Slot attendance panel (11:15 / 1:30 Present|Absent)
+// -------------------------------------------------------
+
+function SlotAttendancePanel({
+  label,
+  cutoffCopy,
+  block,
+  signedInCount,
+  slotValue,
+  canEdit,
+  canWrite,
+  saving,
+  saveError,
+  saveNotice,
+  onStatusChange,
+  onSave,
+  canEditAfterSave,
+}: {
+  label: string;
+  cutoffCopy: string;
+  block: SlotAttendanceBlock;
+  signedInCount: number;
+  slotValue: (entry: SlotAttendanceEntry) => string;
+  canEdit: boolean;
+  canWrite: boolean;
+  saving: boolean;
+  saveError: string | null;
+  saveNotice: string | null;
+  onStatusChange: (prefectId: number, status: string) => void;
+  onSave: () => void;
+  canEditAfterSave: boolean;
+}) {
+  const presentCount = block.entries.filter(
+    (e) => slotValue(e) === "Present"
+  ).length;
+  const absentCount = block.entries.filter(
+    (e) => slotValue(e) === "Absent"
+  ).length;
+
+  return (
+    <div>
+      {block.saved ? (
+        <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-700 text-sm">
+          <strong>Saved</strong> — {label} attendance for this date has been
+          saved.
+          {canEditAfterSave
+            ? " As a superuser you can still change statuses."
+            : canWrite
+              ? " This session is view-only."
+              : " This date is view-only."}
+        </div>
+      ) : (
+        <div className="mb-6 p-4 bg-brand-50 border border-brand-200 rounded-lg text-brand-800 text-sm">
+          {canWrite ? (
+            <>
+              Mark each prefect Present or Absent, then press{" "}
+              <strong>Save Attendance</strong>. Prefects who signed in default
+              to Present; others default to Absent.
+            </>
+          ) : (
+            <>You have view-only access to {label} attendance.</>
+          )}
+        </div>
+      )}
+
+      {saveError && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
+          {saveError}
+        </div>
+      )}
+      {saveNotice && (
+        <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-md text-sm text-emerald-700">
+          {saveNotice}
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm">
+          <p className="text-xs text-slate-500 mb-1">{label} sign-ins</p>
+          <p className="text-2xl font-semibold text-slate-900">{signedInCount}</p>
+          <p className="text-xs text-slate-400 mt-1">{cutoffCopy}</p>
+        </div>
+        <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm">
+          <p className="text-xs text-slate-500 mb-1">Present</p>
+          <p className="text-2xl font-semibold text-emerald-700">{presentCount}</p>
+        </div>
+        <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm">
+          <p className="text-xs text-slate-500 mb-1">Absent</p>
+          <p className="text-2xl font-semibold text-red-600">{absentCount}</p>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="font-semibold text-slate-800">
+              {label} Attendance ({block.entries.length} prefects)
+            </h3>
+            <p className="text-xs text-slate-400 mt-1">{cutoffCopy}</p>
+          </div>
+          {canEdit && (
+            <button
+              type="button"
+              onClick={onSave}
+              disabled={saving || block.entries.length === 0}
+              className="px-5 py-2.5 rounded-md bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {saving ? (
+                <span className="flex items-center gap-2">
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Saving...
+                </span>
+              ) : block.saved ? (
+                "Update Attendance"
+              ) : (
+                "Save Attendance"
+              )}
+            </button>
+          )}
+        </div>
+
+        {block.entries.length === 0 ? (
+          <div className="p-10 text-center text-sm text-slate-400">
+            No prefects registered yet. Add house prefects first.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 hidden sm:table-cell">
+                    #
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
+                    Prefect
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
+                    Sign-in time
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
+                    {canEdit ? "Mark status" : "Status"}
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {block.entries.map((entry, idx) => {
+                  const value = slotValue(entry);
+                  return (
+                    <tr
+                      key={entry.prefectId}
+                      className="hover:bg-slate-50/50 transition-colors"
+                    >
+                      <td className="px-6 py-3 text-sm text-slate-400 font-mono hidden sm:table-cell">
+                        {idx + 1}
+                      </td>
+                      <td className="px-6 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-600 text-xs font-semibold">
+                            {avatarChar(entry.name)}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-slate-800">
+                              {entry.name}
+                            </p>
+                            <p className="text-xs text-slate-400">
+                              {entry.class && (
+                                <span className="mr-2 font-medium text-slate-500">
+                                  {entry.class}
+                                </span>
+                              )}
+                              <span className="font-mono">PIN: {entry.pin}</span>
+                              {entry.code && (
+                                <span className="ml-2 font-mono">
+                                  Code: {entry.code}
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-3">
+                        {entry.time ? (
+                          <span className="text-sm font-mono font-medium text-slate-700">
+                            {toDisplayTime(entry.time)}
+                          </span>
+                        ) : (
+                          <span className="text-sm text-slate-300">—</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-3">
+                        {canEdit ? (
+                          <select
+                            value={value}
+                            onChange={(e) =>
+                              onStatusChange(entry.prefectId, e.target.value)
+                            }
+                            className={`px-3 py-2 rounded-md border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-500/40 transition-colors ${GATE_STATUS_STYLES[value] || "bg-white border-slate-300 text-slate-700"}`}
+                          >
+                            {SLOT_STATUSES.map((status) => (
+                              <option key={status} value={status}>
+                                {status}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span
+                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${GATE_STATUS_STYLES[value] || "bg-slate-100 text-slate-700 border-slate-200"}`}
+                          >
+                            {value}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
