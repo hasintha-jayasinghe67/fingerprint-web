@@ -248,7 +248,6 @@ export default function AttendancePage() {
   const totalRecords = events.length;
   const uniqueUsers = new Set(events.map((e) => e.pin)).size;
   const checkIns = events.filter((e) => e.status === "0").length;
-  const checkOuts = events.filter((e) => e.status === "1").length;
   const deviceConnected = devices.length;
 
   function eventIsLate(event: AttendanceEvent): boolean {
@@ -357,11 +356,10 @@ export default function AttendancePage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <StatCard label="Total records" value={totalRecords} />
           <StatCard label="Unique users" value={uniqueUsers} />
           <StatCard label="Check ins" value={checkIns} />
-          <StatCard label="Check outs" value={checkOuts} />
           <StatCard label="Devices online" value={deviceConnected} />
         </div>
 

@@ -715,7 +715,7 @@ export default function AttendanceDateDetailPage() {
             {activeTab === "third" && thirdAttendance && (
               <SlotAttendancePanel
                 label="1:30"
-                cutoffCopy="After 1:15 PM"
+                cutoffCopy="After 1:00 PM"
                 block={thirdAttendance}
                 signedInCount={third.length}
                 slotValue={(entry) => slotValue("third", entry)}
@@ -1050,8 +1050,9 @@ function SlotAttendancePanel({
           {canWrite ? (
             <>
               Mark each prefect Present or Absent, then press{" "}
-              <strong>Save Attendance</strong>. Prefects who signed in default
-              to Present; others default to Absent.
+              <strong>Save Attendance</strong>. Only prefects who signed in
+              for morning check-in are listed. Those who also signed in for
+              this session default to Present; others default to Absent.
             </>
           ) : (
             <>You have view-only access to {label} attendance.</>
@@ -1117,7 +1118,8 @@ function SlotAttendancePanel({
 
         {block.entries.length === 0 ? (
           <div className="p-10 text-center text-sm text-slate-400">
-            No prefects registered yet. Add house prefects first.
+            No morning check-ins on this date. Prefects who signed in for
+            morning check-in appear here.
           </div>
         ) : (
           <div className="overflow-x-auto">
