@@ -688,52 +688,70 @@ export default function AttendanceDateDetailPage() {
             )}
 
             {/* ================= 11.15 Sign-in tab ================= */}
-            {activeTab === "second" && secondAttendance && (
-              <SlotAttendancePanel
-                label="11:15"
-                cutoffCopy="After 10:50 AM"
-                block={secondAttendance}
-                signedInCount={second.length}
-                slotValue={(entry) => slotValue("second", entry)}
-                canEdit={canEditSlot("second")}
-                canWrite={canWrite}
-                saving={saving}
-                saveError={activeTab === "second" ? saveError : null}
-                saveNotice={activeTab === "second" ? saveNotice : null}
-                onStatusChange={(prefectId, status) =>
-                  setSlotDrafts((prev) => ({
-                    ...prev,
-                    second: { ...prev.second, [prefectId]: status },
-                  }))
-                }
-                onSave={() => handleSaveSlot("second")}
-                canEditAfterSave={canEditAfterSave}
-              />
-            )}
+            {activeTab === "second" &&
+              (secondAttendance ? (
+                <SlotAttendancePanel
+                  label="11:15"
+                  cutoffCopy="After 10:50 AM"
+                  block={secondAttendance}
+                  signedInCount={second.length}
+                  slotValue={(entry) => slotValue("second", entry)}
+                  canEdit={canEditSlot("second")}
+                  canWrite={canWrite}
+                  saving={saving}
+                  saveError={activeTab === "second" ? saveError : null}
+                  saveNotice={activeTab === "second" ? saveNotice : null}
+                  onStatusChange={(prefectId, status) =>
+                    setSlotDrafts((prev) => ({
+                      ...prev,
+                      second: { ...prev.second, [prefectId]: status },
+                    }))
+                  }
+                  onSave={() => handleSaveSlot("second")}
+                  canEditAfterSave={canEditAfterSave}
+                />
+              ) : (
+                <div className="p-10 text-center text-sm text-slate-500 bg-white rounded-lg border border-slate-200">
+                  11:15 attendance data is missing from the API. Redeploy the
+                  server (rebuild <code className="font-mono text-xs">server.js</code>{" "}
+                  if you run with Node) and ensure the{" "}
+                  <code className="font-mono text-xs">slot_attendance</code>{" "}
+                  migration has been applied.
+                </div>
+              ))}
 
             {/* ================= 1.30 Sign-in tab ================= */}
-            {activeTab === "third" && thirdAttendance && (
-              <SlotAttendancePanel
-                label="1:30"
-                cutoffCopy="After 1:00 PM"
-                block={thirdAttendance}
-                signedInCount={third.length}
-                slotValue={(entry) => slotValue("third", entry)}
-                canEdit={canEditSlot("third")}
-                canWrite={canWrite}
-                saving={saving}
-                saveError={activeTab === "third" ? saveError : null}
-                saveNotice={activeTab === "third" ? saveNotice : null}
-                onStatusChange={(prefectId, status) =>
-                  setSlotDrafts((prev) => ({
-                    ...prev,
-                    third: { ...prev.third, [prefectId]: status },
-                  }))
-                }
-                onSave={() => handleSaveSlot("third")}
-                canEditAfterSave={canEditAfterSave}
-              />
-            )}
+            {activeTab === "third" &&
+              (thirdAttendance ? (
+                <SlotAttendancePanel
+                  label="1:30"
+                  cutoffCopy="After 1:00 PM"
+                  block={thirdAttendance}
+                  signedInCount={third.length}
+                  slotValue={(entry) => slotValue("third", entry)}
+                  canEdit={canEditSlot("third")}
+                  canWrite={canWrite}
+                  saving={saving}
+                  saveError={activeTab === "third" ? saveError : null}
+                  saveNotice={activeTab === "third" ? saveNotice : null}
+                  onStatusChange={(prefectId, status) =>
+                    setSlotDrafts((prev) => ({
+                      ...prev,
+                      third: { ...prev.third, [prefectId]: status },
+                    }))
+                  }
+                  onSave={() => handleSaveSlot("third")}
+                  canEditAfterSave={canEditAfterSave}
+                />
+              ) : (
+                <div className="p-10 text-center text-sm text-slate-500 bg-white rounded-lg border border-slate-200">
+                  1:30 attendance data is missing from the API. Redeploy the
+                  server (rebuild <code className="font-mono text-xs">server.js</code>{" "}
+                  if you run with Node) and ensure the{" "}
+                  <code className="font-mono text-xs">slot_attendance</code>{" "}
+                  migration has been applied.
+                </div>
+              ))}
 
             {/* ================= Gate Attendance tab ================= */}
             {activeTab === "gate" && (
