@@ -492,6 +492,9 @@ export default function AttendanceDateDetailPage() {
               <Link href="/gate-sheet" role="menuitem" className={headerMenuItemClass}>
                 Gate Sheet
               </Link>
+              <Link href="/excuses" role="menuitem" className={headerMenuItemClass}>
+                Excuses
+              </Link>
               <Link href="/settings" role="menuitem" className={headerMenuItemClass}>
                 <IconSettings className="w-3 h-3" />
                 Settings

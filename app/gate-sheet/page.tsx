@@ -129,6 +129,9 @@ export default function GateSheetPage() {
               <Link href="/batches" role="menuitem" className={headerMenuItemClass}>
                 Batches
               </Link>
+              <Link href="/excuses" role="menuitem" className={headerMenuItemClass}>
+                Excuses
+              </Link>
               <Link href="/settings" role="menuitem" className={headerMenuItemClass}>
                 <IconSettings className="w-3 h-3" />
                 Settings
