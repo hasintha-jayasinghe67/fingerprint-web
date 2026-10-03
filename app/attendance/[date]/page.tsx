@@ -343,7 +343,7 @@ export default function AttendanceDateDetailPage() {
       setSaveNotice(
         unmatched.length > 0
           ? `Applied ES to ${appliedEs} and EG to ${appliedEg} prefect(s).${unmatchedNote}`
-          : `Applied ES to ${appliedEs} and EG to ${appliedEg} prefect(s). Unmarked leftovers set to Traitor.`
+          : `Applied ES to ${appliedEs} and EG to ${appliedEg} prefect(s). Unmarked prefects with no morning sign-in set to Traitor; those without gate duty set to Present.`
       );
       setExcusesOpen(false);
       await fetchData({ silent: true });
@@ -950,8 +950,9 @@ export default function AttendanceDateDetailPage() {
             Enter one prefect code, full name, surname, or PIN per line
             (commas also work). Prefects in these lists become ES or EG
             (including those currently Present). Late may be overwritten by EG
-            only. When every line matches, remaining unmarked prefects become
-            Traitor.
+            only. When every line matches, remaining unmarked prefects who
+            did not sign in for the morning become Traitor, and those with no
+            gate duty today become Present.
           </p>
 
           <div className="flex flex-col gap-1.5">
