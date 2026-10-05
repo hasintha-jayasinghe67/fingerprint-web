@@ -29,6 +29,9 @@ interface SlotEntry {
   registered: boolean;
   time: string;
   late: boolean;
+  suspended?: boolean;
+  /** Morning cutoff (HH:MM:SS) that applied to this prefect; null for other slots. */
+  deadline?: string | null;
 }
 
 interface SlotAttendanceEntry {
@@ -681,8 +684,8 @@ export default function AttendanceDateDetailPage() {
                               (b) =>
                                 `${b.name} ${toTimeNoSeconds(`${b.morningSigninTime}:00`)}`
                             )
-                            .join(" · ")}; otherwise after 7:00 AM`
-                        : "Late after 7:00 AM"
+                            .join(" · ")}; otherwise after 7:00 AM. Suspended: 15 min earlier`
+                        : "Late after 7:00 AM. Suspended: 15 min earlier"
                     }
                     entries={displayedMorning}
                   />
@@ -1372,7 +1375,13 @@ function SignInTable({
             {entries.map((entry, idx) => (
               <tr
                 key={`${entry.pin}-${idx}`}
-                className={`transition-colors ${entry.late ? "bg-red-50/60 hover:bg-red-50" : "hover:bg-slate-50/50"}`}
+                className={`transition-colors ${
+                  entry.late && entry.suspended
+                    ? "bg-violet-50/70 hover:bg-violet-50"
+                    : entry.late
+                      ? "bg-red-50/60 hover:bg-red-50"
+                      : "hover:bg-slate-50/50"
+                }`}
               >
                 <td className="px-6 py-3.5 text-sm text-slate-400 font-mono hidden sm:table-cell">{idx + 1}</td>
                 <td className="px-6 py-3.5">
@@ -1395,13 +1404,27 @@ function SignInTable({
                   </div>
                 </td>
                 <td className="px-6 py-3.5">
-                  <span className="text-sm font-mono font-medium text-slate-700">
+                  <span
+                    className={`text-sm font-mono font-medium ${
+                      entry.late && entry.suspended ? "text-violet-700" : "text-slate-700"
+                    }`}
+                  >
                     {toDisplayTime(entry.time)}
                   </span>
+                  {entry.suspended && entry.deadline && (
+                    <p className="text-[11px] text-violet-600 mt-0.5">
+                      Suspended · due by {toTimeNoSeconds(entry.deadline)}
+                    </p>
+                  )}
                 </td>
                 {showStatus && (
                   <td className="px-6 py-3.5">
-                    {entry.late ? (
+                    {entry.late && entry.suspended ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-violet-600 text-white border border-violet-700">
+                        <IconWarning className="w-3 h-3" />
+                        SUSPENDED · LATE
+                      </span>
+                    ) : entry.late ? (
                       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-red-600 text-white border border-red-700">
                         <IconWarning className="w-3 h-3" />
                         LATE

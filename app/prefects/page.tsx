@@ -206,12 +206,20 @@ export default function PrefectsPage() {
         maxWidth="5xl"
         actionsLayout="wrap"
         actions={
-          <Link
-            href="/prefects/add"
-            className="px-4 py-2 rounded-md bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 transition-colors"
-          >
-            + Add Prefect
-          </Link>
+          <>
+            <Link
+              href="/prefects/suspend"
+              className="px-4 py-2 rounded-md bg-white text-slate-700 border border-slate-300 text-sm font-semibold hover:bg-slate-50 transition-colors"
+            >
+              Suspensions
+            </Link>
+            <Link
+              href="/prefects/add"
+              className="px-4 py-2 rounded-md bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 transition-colors"
+            >
+              + Add Prefect
+            </Link>
+          </>
         }
       />
 

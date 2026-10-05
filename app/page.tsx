@@ -28,6 +28,9 @@ interface AttendanceEvent {
   deviceSN: string;
   /** Server-computed: morning late per gate-duty vs 07:00 rules. */
   late?: boolean;
+  suspended?: boolean;
+  /** Morning cutoff (HH:MM:SS) that applied to this prefect; null outside the morning slot. */
+  deadline?: string | null;
 }
 
 interface DeviceInfo {
@@ -55,6 +58,14 @@ function toSriLankanTime(timestamp: string): string {
   const period = h >= 12 ? "PM" : "AM";
   const displayH = h === 0 ? 12 : h > 12 ? h - 12 : h;
   return `${displayH}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")} ${period}`;
+}
+
+/** "06:45:00" → "6:45 AM" */
+function toTimeNoSeconds(time: string): string {
+  const [h, m] = time.split(":").map(Number);
+  const period = h >= 12 ? "PM" : "AM";
+  const displayH = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${displayH}:${String(m).padStart(2, "0")} ${period}`;
 }
 
 function toSriLankanDate(timestamp: string): string {
@@ -281,11 +292,17 @@ export default function AttendancePage() {
               <Link href="/prefects" role="menuitem" className={headerMenuItemClass}>
                 Prefects
               </Link>
+              <Link href="/prefects/suspend" role="menuitem" className={headerMenuItemClass}>
+                Suspensions
+              </Link>
               <Link href="/batches" role="menuitem" className={headerMenuItemClass}>
                 Batches
               </Link>
               <Link href="/gate-sheet" role="menuitem" className={headerMenuItemClass}>
                 Gate Sheet
+              </Link>
+              <Link href="/tie-duties" role="menuitem" className={headerMenuItemClass}>
+                Tie Duties
               </Link>
               <Link href="/excuses" role="menuitem" className={headerMenuItemClass}>
                 Excuses
@@ -479,7 +496,11 @@ export default function AttendancePage() {
                   {displayedEvents.map((event, idx) => (
                     <tr
                       key={`${event.pin}-${event.timestamp}-${idx}`}
-                      className="hover:bg-slate-50/50 transition-colors"
+                      className={`transition-colors ${
+                        event.suspended && eventIsLate(event)
+                          ? "bg-violet-50/70 hover:bg-violet-50"
+                          : "hover:bg-slate-50/50"
+                      }`}
                     >
                       <td className="px-6 py-3.5 text-sm text-slate-400 font-mono hidden md:table-cell">
                         {idx + 1}
@@ -503,15 +524,31 @@ export default function AttendancePage() {
                       </td>
                       <td className="px-6 py-3.5">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-mono font-medium text-slate-700">
+                          <span
+                            className={`text-sm font-mono font-medium ${
+                              event.suspended && eventIsLate(event)
+                                ? "text-violet-700"
+                                : "text-slate-700"
+                            }`}
+                          >
                             {toSriLankanTime(event.timestamp)}
                           </span>
-                          {eventIsLate(event) && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-600 text-white">
-                              LATE
-                            </span>
-                          )}
+                          {eventIsLate(event) &&
+                            (event.suspended ? (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-violet-600 text-white">
+                                SUSPENDED · LATE
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-600 text-white">
+                                LATE
+                              </span>
+                            ))}
                         </div>
+                        {event.suspended && event.deadline && (
+                          <p className="text-[11px] text-violet-600 mt-0.5">
+                            Suspended · due by {toTimeNoSeconds(event.deadline)}
+                          </p>
+                        )}
                       </td>
                       <td className="px-6 py-3.5">
                         <span
