@@ -29,6 +29,8 @@ interface SlotEntry {
   registered: boolean;
   time: string;
   late: boolean;
+  /** Was late, but excused on the spot for this day (late is then false). */
+  lateExcused?: boolean;
   suspended?: boolean;
   /** Morning cutoff (HH:MM:SS) that applied to this prefect; null for other slots. */
   deadline?: string | null;
@@ -1428,6 +1430,10 @@ function SignInTable({
                       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-red-600 text-white border border-red-700">
                         <IconWarning className="w-3 h-3" />
                         LATE
+                      </span>
+                    ) : entry.lateExcused ? (
+                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                        Late excused
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">

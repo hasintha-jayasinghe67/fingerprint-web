@@ -28,6 +28,8 @@ interface AttendanceEvent {
   deviceSN: string;
   /** Server-computed: morning late per gate-duty vs 07:00 rules. */
   late?: boolean;
+  /** Was late, but excused on the spot for this day (late is then false). */
+  lateExcused?: boolean;
   suspended?: boolean;
   /** Morning cutoff (HH:MM:SS) that applied to this prefect; null outside the morning slot. */
   deadline?: string | null;
@@ -170,6 +172,8 @@ export default function AttendancePage() {
     msg: string;
   } | null>(null);
   const [showLatecomers, setShowLatecomers] = useState(false);
+  const [excusingPin, setExcusingPin] = useState<string | null>(null);
+  const [excuseError, setExcuseError] = useState<string | null>(null);
 
   const todayISO = getTodaySriLankanDateISO();
 
@@ -252,6 +256,41 @@ export default function AttendancePage() {
       setQueueFeedback({ ok: false, msg: "Network error" });
     } finally {
       setClearingQueue(false);
+    }
+  }
+
+  async function handleLateExcusal(event: AttendanceEvent, excuse: boolean) {
+    const date = event.timestamp.split(" ")[0];
+    setExcusingPin(event.pin);
+    setExcuseError(null);
+    try {
+      const res = excuse
+        ? await fetch(apiUrl("/api/late-excusals"), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ pin: event.pin, date }),
+          })
+        : await fetch(
+            apiUrl(
+              `/api/late-excusals?pin=${encodeURIComponent(event.pin)}&date=${date}`
+            ),
+            { method: "DELETE" }
+          );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update late status");
+      setEvents((prev) =>
+        prev.map((e) =>
+          e.pin === event.pin &&
+          e.timestamp.startsWith(date) &&
+          (excuse ? e.late : e.lateExcused)
+            ? { ...e, late: !excuse, lateExcused: excuse }
+            : e
+        )
+      );
+    } catch (err) {
+      setExcuseError(err instanceof Error ? err.message : "Network error");
+    } finally {
+      setExcusingPin(null);
     }
   }
 
@@ -458,6 +497,14 @@ export default function AttendancePage() {
                 )}
               </div>
             </div>
+            {excuseError && (
+              <div className="px-6 py-3 text-sm border-b bg-red-50 border-red-100 text-red-700">
+                {excuseError}
+                <button onClick={() => setExcuseError(null)} className="ml-2 font-bold" aria-label="Dismiss">
+                  <IconClose className="w-3 h-3" />
+                </button>
+              </div>
+            )}
             {displayedEvents.length === 0 ? (
               <div className="px-6 py-12 text-center">
                 <p className="text-sm font-medium text-slate-700">
@@ -543,6 +590,32 @@ export default function AttendancePage() {
                                 LATE
                               </span>
                             ))}
+                          {eventIsLate(event) && canWrite && (
+                            <button
+                              type="button"
+                              onClick={() => handleLateExcusal(event, true)}
+                              disabled={excusingPin === event.pin}
+                              title="Excused on the spot: remove the late mark for today"
+                              className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 transition-colors disabled:opacity-50"
+                            >
+                              {excusingPin === event.pin ? "..." : "Excuse"}
+                            </button>
+                          )}
+                          {event.lateExcused && (
+                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                              LATE EXCUSED
+                              {canWrite && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleLateExcusal(event, false)}
+                                  disabled={excusingPin === event.pin}
+                                  className="underline font-medium text-slate-500 hover:text-slate-800 disabled:opacity-50"
+                                >
+                                  {excusingPin === event.pin ? "..." : "Undo"}
+                                </button>
+                              )}
+                            </span>
+                          )}
                         </div>
                         {event.suspended && event.deadline && (
                           <p className="text-[11px] text-violet-600 mt-0.5">
