@@ -298,16 +298,16 @@ export default function TieDutiesPage() {
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {feedback && (
-          <div className={`mb-4 p-3 rounded-md text-sm ${feedback.ok ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
-            {feedback.msg}
-            <button onClick={() => setFeedback(null)} className="ml-2 font-bold" aria-label="Dismiss">
-              <IconClose className="w-3 h-3" />
+          <div role={feedback.ok ? "status" : "alert"} className={`mb-4 p-3 rounded-md text-sm flex items-center justify-between gap-3 ${feedback.ok ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
+            <p>{feedback.msg}</p>
+            <button type="button" onClick={() => setFeedback(null)} className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-md shrink-0" aria-label="Dismiss">
+              <IconClose className="w-4 h-4" />
             </button>
           </div>
         )}
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-6">
+        <div className="flex gap-2 mb-6 overflow-x-auto" aria-label="Tie duty sections">
           {([
             { id: "history", label: `Past tie duties${duties.length ? ` (${duties.length})` : ""}` },
             { id: "assign", label: "Assign duty" },
@@ -315,8 +315,9 @@ export default function TieDutiesPage() {
             <button
               key={t.id}
               type="button"
+              aria-pressed={tab === t.id}
               onClick={() => setTab(t.id)}
-              className={`flex-1 px-4 sm:px-5 py-2.5 rounded-md text-sm font-semibold transition-colors ${
+              className={`shrink-0 min-h-11 flex-1 px-4 sm:px-5 py-2.5 rounded-md text-sm font-semibold transition-colors ${
                 tab === t.id
                   ? "bg-slate-800 text-white"
                   : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
@@ -355,7 +356,7 @@ export default function TieDutiesPage() {
                 <button
                   type="button"
                   onClick={() => setTab("assign")}
-                  className="mt-4 px-4 py-2 rounded-md text-sm font-medium bg-brand-600 text-white hover:bg-brand-700 transition-colors"
+                  className="mt-4 px-4 py-2 rounded-md text-sm font-medium min-h-11 bg-brand-700 text-white hover:bg-brand-800 transition-colors"
                 >
                   Assign a tie duty
                 </button>
@@ -381,7 +382,7 @@ export default function TieDutiesPage() {
               className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 space-y-5"
             >
               {assignError && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
+                <div role="alert" className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
                   {assignError}
                 </div>
               )}
@@ -392,20 +393,20 @@ export default function TieDutiesPage() {
               >
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Duty date <span className="text-red-500">*</span>
+                  Duty date <span className="text-red-700">*</span>
                 </label>
                 <input
                   type="date"
                   value={dutyDate}
                   onChange={(e) => setDutyDate(e.target.value)}
                   required
-                  className="w-full sm:w-48 px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-colors"
+                  className="w-full sm:w-48 px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 text-sm transition-colors"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Number of House Prefects <span className="text-red-500">*</span>
+                  Number of House Prefects <span className="text-red-700">*</span>
                 </label>
                 <input
                   type="number"
@@ -415,14 +416,14 @@ export default function TieDutiesPage() {
                   onChange={(e) => setCount(e.target.value)}
                   required
                   placeholder="e.g. 4"
-                  className="w-full sm:w-48 px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-colors"
+                  className="w-full sm:w-48 px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 text-sm transition-colors"
                 />
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-sm font-medium text-slate-700">
-                    Batches to select from <span className="text-red-500">*</span>
+                    Batches to select from <span className="text-red-700">*</span>
                   </label>
                   {batches.length > 0 && (
                     <button
@@ -454,7 +455,7 @@ export default function TieDutiesPage() {
                           />
                           <span className="text-slate-800">{b.name}</span>
                         </span>
-                        <span className="text-xs text-slate-400">
+                        <span className="text-xs text-slate-600">
                           {b.memberCount} prefect{b.memberCount !== 1 ? "s" : ""}
                         </span>
                       </label>
@@ -481,7 +482,7 @@ export default function TieDutiesPage() {
                       !countValid ||
                       selectedBatchIds.size === 0
                     }
-                    className="px-5 py-2.5 rounded-md text-sm font-semibold bg-brand-600 text-white hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-5 py-2.5 rounded-md text-sm font-semibold min-h-11 bg-brand-700 text-white hover:bg-brand-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {assigning ? "Assigning..." : "Assign"}
                   </button>
@@ -535,7 +536,7 @@ export default function TieDutiesPage() {
                         type="button"
                         onClick={handleConfirm}
                         disabled={assigning || saving}
-                        className="px-4 py-2 rounded-md text-sm font-semibold bg-brand-600 text-white hover:bg-brand-700 transition-colors disabled:opacity-50"
+                        className="px-4 py-2 rounded-md text-sm font-semibold min-h-11 bg-brand-700 text-white hover:bg-brand-800 transition-colors disabled:opacity-50"
                       >
                         {saving ? "Saving..." : "Confirm & save"}
                       </button>
@@ -635,7 +636,7 @@ function AssignedList({
         <button
           type="button"
           onClick={handleCopy}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${
+          className={`inline-flex items-center gap-1.5 min-h-11 inline-flex items-center px-3 py-2 rounded-md text-xs font-medium border transition-colors ${
             copyState === "copied"
               ? "bg-emerald-50 text-emerald-700 border-emerald-200"
               : copyState === "failed"
@@ -656,7 +657,7 @@ function AssignedList({
           <ol className="divide-y divide-slate-100">
             {group.items.map((item, idx) => (
               <li key={`${item.label}-${idx}`} className="px-6 py-2.5 flex items-center gap-3 text-sm">
-                <span className="w-6 text-right text-slate-400 font-mono">{idx + 1}.</span>
+                <span className="w-6 text-right text-slate-600 font-mono">{idx + 1}.</span>
                 <span className={`text-slate-800 ${group.title === "Codes" ? "font-mono" : ""}`}>
                   {item.label}
                 </span>
@@ -673,7 +674,7 @@ function AssignedList({
 
 function SuspendedBadge() {
   return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-violet-50 text-violet-700 border border-violet-200">
+    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-200">
       Suspended
     </span>
   );
@@ -701,7 +702,7 @@ function TieDutyCard({
             {duty.prefectCount} prefect{duty.prefectCount !== 1 ? "s" : ""} from{" "}
             {duty.batchNames.join(", ") || "—"}
           </p>
-          <p className="text-[11px] text-slate-400 mt-0.5">
+          <p className="text-xs text-slate-600 mt-0.5">
             Assigned {formatDateTime(duty.createdAt)}
           </p>
         </div>
@@ -710,7 +711,8 @@ function TieDutyCard({
             type="button"
             onClick={onDelete}
             disabled={deleting}
-            className="px-2 py-1 rounded-md text-xs text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
+            aria-label={`Delete tie duty on ${formatDutyDate(duty.dutyDate)}`}
+            className="min-h-11 inline-flex items-center px-3 rounded-md text-xs font-medium text-red-700 bg-red-50 border border-red-200 hover:bg-red-100 transition-colors disabled:opacity-50"
           >
             {deleting ? "..." : "Delete"}
           </button>
@@ -734,7 +736,10 @@ function TieDutyCard({
                     {m.name}
                     {m.wasSuspended && <SuspendedBadge />}
                   </p>
-                  <p className="text-xs text-slate-400 font-mono">PIN: {m.pin}</p>
+                  {m.class && (
+                    <p className="text-xs text-slate-600 md:hidden">{m.class}</p>
+                  )}
+                  <p className="text-xs text-slate-600 font-mono">PIN: {m.pin}</p>
                 </td>
                 <td className="px-6 py-3 text-sm text-slate-600 hidden md:table-cell">{m.class || "—"}</td>
                 <td className="px-6 py-3 text-sm text-slate-600 font-mono hidden md:table-cell">{m.code || "—"}</td>

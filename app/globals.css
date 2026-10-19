@@ -2,17 +2,22 @@
 
 /*
  * Design tokens — slate + marigold.
- * One accent (marigold) used only for primary actions and brand marks.
- * Everything else is neutral slate/ink on a flat paper background.
+ * Marigold is the action color. Primary fills use brand-700 so white
+ * labels clear WCAG AA (6.09:1). brand-600 is too light for white text.
+ * Everything else is neutral slate on a flat paper background.
  */
 :root {
   --paper: #f2f3f1;
   --ink: #1b1e1d;
+  --action: #8f5413;
+  --action-hover: #744314;
 }
 
 @theme inline {
   --color-paper: var(--paper);
   --color-ink: var(--ink);
+  --color-action: var(--action);
+  --color-action-hover: var(--action-hover);
 
   --color-brand-50: #fbf5ea;
   --color-brand-100: #f6e8cc;
@@ -35,7 +40,44 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
 }
 
-/* Subtle hover feedback on table rows */
+/* Keyboard focus sits outside the control, on the page surface. */
+:focus-visible {
+  outline: 2px solid var(--action);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: #eed39d;
+  color: var(--ink);
+}
+
+input,
+textarea {
+  caret-color: var(--action);
+}
+
+/* 16px stops iOS from zooming focused fields and shoving the layout. */
+input,
+select,
+textarea {
+  font-size: 1rem;
+}
+
+html {
+  scrollbar-color: #64748b var(--paper);
+}
+
+/* Row hover is a color change, not motion. */
 tr {
   transition: background-color 0.15s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-spin {
+    animation: none;
+  }
+
+  tr {
+    transition: none;
+  }
 }

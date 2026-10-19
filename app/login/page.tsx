@@ -29,7 +29,7 @@ export default function LoginPage() {
   };
 
   const fieldClass =
-    "w-full px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-colors";
+    "w-full px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 text-sm placeholder:text-slate-600 transition-colors";
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12">
@@ -54,7 +54,7 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="px-8 py-6 space-y-5">
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
+              <div id="login-error" role="alert" className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
                 {error}
               </div>
             )}
@@ -73,6 +73,8 @@ export default function LoginPage() {
                 required
                 autoFocus
                 autoComplete="username"
+                aria-invalid={error ? true : undefined}
+                aria-describedby={error ? "login-error" : undefined}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Enter your username"
@@ -93,6 +95,8 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
+                aria-invalid={error ? true : undefined}
+                aria-describedby={error ? "login-error" : undefined}
                 placeholder="Enter your password"
                 className={fieldClass}
               />
@@ -101,7 +105,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full px-4 py-2.5 rounded-md bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+              className="w-full px-4 py-2.5 rounded-md min-h-11 bg-brand-700 text-white text-sm font-semibold hover:bg-brand-800 disabled:opacity-60 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>

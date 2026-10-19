@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { apiUrl } from "@/lib/api";
 import { useAuth, isAdminOrAbove } from "@/lib/AuthContext";
 import SiteHeader from "@/components/site-header";
-import { IconClose } from "@/components/icons";
 
 // -------------------------------------------------------
 // Types
@@ -307,7 +306,7 @@ export default function AddPrefectPage() {
               </h2>
 
               {error && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
+                <div role="alert" className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
                   {error}
                 </div>
               )}
@@ -318,7 +317,7 @@ export default function AddPrefectPage() {
                     htmlFor="name"
                     className="block text-sm font-medium text-slate-700 mb-1.5"
                   >
-                    Name with initials <span className="text-red-500">*</span>
+                    Name with initials <span className="text-red-700">*</span>
                   </label>
                   <input
                     id="name"
@@ -327,7 +326,7 @@ export default function AddPrefectPage() {
                     onChange={(e) => setName(e.target.value)}
                     required
                     placeholder="e.g. H. Perera"
-                    className="w-full px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-colors"
+                    className="w-full px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 text-sm placeholder:text-slate-600 transition-colors"
                   />
                 </div>
 
@@ -336,7 +335,7 @@ export default function AddPrefectPage() {
                     htmlFor="class"
                     className="block text-sm font-medium text-slate-700 mb-1.5"
                   >
-                    Class <span className="text-red-500">*</span>
+                    Class <span className="text-red-700">*</span>
                   </label>
                   <input
                     id="class"
@@ -345,7 +344,7 @@ export default function AddPrefectPage() {
                     onChange={(e) => setPrefectClass(e.target.value)}
                     required
                     placeholder="e.g. 10A"
-                    className="w-full px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-colors"
+                    className="w-full px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 text-sm placeholder:text-slate-600 transition-colors"
                   />
                 </div>
 
@@ -355,7 +354,7 @@ export default function AddPrefectPage() {
                     className="block text-sm font-medium text-slate-700 mb-1.5"
                   >
                     Code{" "}
-                    <span className="text-slate-400 font-normal">
+                    <span className="text-slate-600 font-normal">
                       (optional)
                     </span>
                   </label>
@@ -365,14 +364,14 @@ export default function AddPrefectPage() {
                     value={code}
                     onChange={(e) => setCode(e.target.value)}
                     placeholder="e.g. HP001"
-                    className="w-full px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-colors"
+                    className="w-full px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 text-sm placeholder:text-slate-600 transition-colors"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={submitting || !name.trim() || !prefectClass.trim()}
-                  className="w-full px-4 py-2.5 rounded-md bg-brand-600 text-white font-semibold hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="w-full px-4 py-2.5 rounded-md min-h-11 bg-brand-700 text-white font-semibold hover:bg-brand-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {submitting ? (
                     <span className="flex items-center justify-center gap-2">
@@ -421,7 +420,7 @@ export default function AddPrefectPage() {
               <div className="px-6 py-4 border-b border-slate-100">
                 <h2 className="font-semibold text-slate-800">
                   Registered Prefects{" "}
-                  <span className="text-slate-400 font-normal">
+                  <span className="text-slate-600 font-normal">
                     ({prefects.length})
                   </span>
                 </h2>
@@ -432,7 +431,7 @@ export default function AddPrefectPage() {
                   <div className="w-6 h-6 border-2 border-slate-800 border-t-transparent rounded-full animate-spin mx-auto" />
                 </div>
               ) : prefects.length === 0 ? (
-                <div className="p-8 text-center text-sm text-slate-400">
+                <div className="p-8 text-center text-sm text-slate-600">
                   No prefects registered yet.
                 </div>
               ) : (
@@ -450,7 +449,7 @@ export default function AddPrefectPage() {
                           <p className="text-sm font-medium text-slate-800">
                             {p.name}
                           </p>
-                          <p className="text-xs text-slate-400">
+                          <p className="text-xs text-slate-600">
                             {p.class && (
                               <span className="mr-2 font-medium text-slate-500">
                                 {p.class}
@@ -478,16 +477,13 @@ export default function AddPrefectPage() {
                           </button>
                         )}
                         <button
+                          type="button"
                           onClick={() => handleDelete(p.id)}
                           disabled={deletingId === p.id}
-                          className="text-slate-400 hover:text-red-500 px-1.5 py-1 rounded transition-colors disabled:opacity-50"
-                          title="Delete prefect"
+                          aria-label={`Delete ${p.name}`}
+                          className="min-h-11 inline-flex items-center px-3 rounded-md text-xs font-medium text-red-700 bg-red-50 border border-red-200 hover:bg-red-100 transition-colors disabled:opacity-50"
                         >
-                          {deletingId === p.id ? (
-                            "..."
-                          ) : (
-                            <IconClose className="w-3.5 h-3.5" />
-                          )}
+                          {deletingId === p.id ? "..." : "Delete"}
                         </button>
                       </div>
                     </div>

@@ -213,7 +213,7 @@ export default function UsersPage() {
     });
 
   const fieldClass =
-    "w-full px-3 py-2 rounded-md border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500";
+    "w-full px-3 py-2 rounded-md border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-600";
 
   return (
     <div className="min-h-screen">
@@ -298,12 +298,12 @@ export default function UsersPage() {
                 disabled={
                   adding || !newUsername.trim() || !newPassword.trim()
                 }
-                className="px-5 py-2 rounded-md bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 disabled:opacity-50 transition-colors whitespace-nowrap"
+                className="px-5 py-2 rounded-md min-h-11 bg-brand-700 text-white text-sm font-semibold hover:bg-brand-800 disabled:opacity-50 transition-colors whitespace-nowrap"
               >
                 {adding ? "Adding..." : "Add user"}
               </button>
             </div>
-            <p className="text-[11px] text-slate-400 mt-2">
+            <p className="text-xs text-slate-600 mt-2">
               Min 8 characters. Username cannot be changed later.
             </p>
           </div>
@@ -311,7 +311,7 @@ export default function UsersPage() {
 
         <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
           {loading ? (
-            <div className="p-8 text-center text-slate-400 text-sm">
+            <div className="p-8 text-center text-slate-600 text-sm">
               Loading users...
             </div>
           ) : visibleUsers.length === 0 ? (
@@ -351,14 +351,14 @@ export default function UsersPage() {
                     <td className="px-4 py-3 font-medium text-slate-900">
                       {u.username}
                       {u.id === currentUser?.id && (
-                        <span className="ml-2 text-[10px] bg-brand-100 text-brand-800 font-semibold px-1.5 py-0.5 rounded">
+                        <span className="ml-2 text-xs bg-brand-100 text-brand-800 font-semibold px-1.5 py-0.5 rounded">
                           You
                         </span>
                       )}
                     </td>
                     <td className="px-4 py-3">
                       <span
-                        className={`text-[11px] font-semibold px-2 py-0.5 rounded ${
+                        className={`text-xs font-semibold px-2 py-0.5 rounded ${
                           u.role === "superuser"
                             ? "bg-slate-800 text-white"
                             : u.role === "admin"
@@ -380,14 +380,17 @@ export default function UsersPage() {
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button
+                            type="button"
                             onClick={() => openEditModal(u)}
-                            className="text-xs font-medium text-brand-700 hover:text-brand-800"
+                            className="min-h-11 inline-flex items-center px-3 rounded-md text-xs font-medium text-brand-800 hover:bg-brand-50"
                           >
                             Edit
                           </button>
                           <button
+                            type="button"
                             onClick={() => handleDeleteUser(u)}
-                            className="text-xs font-medium text-red-600 hover:text-red-700"
+                            aria-label={`Delete ${u.username}`}
+                            className="min-h-11 inline-flex items-center px-3 rounded-md text-xs font-medium text-red-700 hover:bg-red-50"
                           >
                             Delete
                           </button>
@@ -422,7 +425,7 @@ export default function UsersPage() {
               readOnly
               className="w-full px-3 py-2.5 rounded-md border border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed"
             />
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-slate-600 mt-1">
               Usernames cannot be changed after creation.
             </p>
           </div>
@@ -432,7 +435,7 @@ export default function UsersPage() {
               className="block text-sm font-medium text-slate-700 mb-1"
             >
               New password{" "}
-              <span className="text-slate-400 font-normal">
+              <span className="text-slate-600 font-normal">
                 (leave blank to keep current)
               </span>
             </label>
@@ -467,7 +470,7 @@ export default function UsersPage() {
           <button
             onClick={handleSaveEdit}
             disabled={savingEdit}
-            className="flex-1 px-4 py-2.5 rounded-md bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 disabled:opacity-60"
+            className="flex-1 px-4 py-2.5 rounded-md min-h-11 bg-brand-700 text-white text-sm font-semibold hover:bg-brand-800 disabled:opacity-60"
           >
             {savingEdit ? "Saving..." : "Save"}
           </button>

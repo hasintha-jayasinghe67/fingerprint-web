@@ -5,6 +5,7 @@ import Link from "next/link";
 import { apiUrl } from "@/lib/api";
 import { useAuth, isAdminOrAbove } from "@/lib/AuthContext";
 import SiteHeader from "@/components/site-header";
+import Modal from "@/components/Modal";
 import HeaderMenu, { headerMenuItemClass } from "@/components/HeaderMenu";
 import {
   IconSettings,
@@ -294,11 +295,14 @@ export default function AttendancePage() {
     }
   }
 
-  // Stats
-  const totalRecords = events.length;
-  const uniqueUsers = new Set(events.map((e) => e.pin)).size;
-  const checkIns = events.filter((e) => e.status === "0").length;
-  const deviceConnected = devices.length;
+  // Unique prefects who signed in today
+  const prefectCount = new Set(events.map((e) => e.pin)).size;
+
+  // Single reader: online if it polled within the last 90s
+  const device = devices[0] ?? null;
+  const deviceOnline = device
+    ? Date.now() - new Date(device.lastSeen).getTime() < 90_000
+    : false;
 
   function eventIsLate(event: AttendanceEvent): boolean {
     return (
@@ -319,35 +323,60 @@ export default function AttendancePage() {
         actions={
           <>
             <div className="hidden md:block text-right shrink-0">
-              <p className="text-[11px] text-slate-400">SL time</p>
+              <p className="text-xs text-slate-600">SL time</p>
               <p className="text-sm font-mono font-medium text-slate-700">
                 {serverTime || "--:--:-- --"}
               </p>
             </div>
+            <div
+              className={`min-h-11 inline-flex items-center px-3 py-2 rounded-md text-xs font-medium border ${
+                deviceOnline
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                  : "bg-slate-50 text-slate-500 border-slate-200"
+              }`}
+              title={
+                device
+                  ? `Last seen ${new Date(device.lastSeen).toLocaleTimeString("en-US", {
+                      timeZone: "Asia/Colombo",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      second: "2-digit",
+                      hour12: true,
+                    })}`
+                  : "No device has contacted the server yet"
+              }
+            >
+              <span
+                className={`inline-block w-1.5 h-1.5 rounded-full mr-1.5 ${
+                  deviceOnline ? "bg-emerald-500" : "bg-slate-300"
+                }`}
+              />
+              Device {deviceOnline ? "online" : "offline"}
+            </div>
             <HeaderMenu label="Navigate">
-              <Link href="/attendance" role="menuitem" className={headerMenuItemClass}>
+              <Link href="/attendance" className={headerMenuItemClass}>
                 Attendance
               </Link>
-              <Link href="/prefects" role="menuitem" className={headerMenuItemClass}>
+              <Link href="/prefects" className={headerMenuItemClass}>
                 Prefects
               </Link>
-              <Link href="/prefects/suspend" role="menuitem" className={headerMenuItemClass}>
+              <Link href="/prefects/suspend" className={headerMenuItemClass}>
                 Suspensions
               </Link>
-              <Link href="/batches" role="menuitem" className={headerMenuItemClass}>
+              <Link href="/batches" className={headerMenuItemClass}>
                 Batches
               </Link>
-              <Link href="/gate-sheet" role="menuitem" className={headerMenuItemClass}>
+              <Link href="/gate-sheet" className={headerMenuItemClass}>
                 Gate Sheet
               </Link>
-              <Link href="/tie-duties" role="menuitem" className={headerMenuItemClass}>
+              <Link href="/tie-duties" className={headerMenuItemClass}>
                 Tie Duties
               </Link>
-              <Link href="/excuses" role="menuitem" className={headerMenuItemClass}>
+              <Link href="/excuses" className={headerMenuItemClass}>
                 Excuses
               </Link>
               {canWrite && (
-                <Link href="/settings" role="menuitem" className={headerMenuItemClass}>
+                <Link href="/settings" className={headerMenuItemClass}>
                   <IconSettings className="w-3 h-3" />
                   Settings
                 </Link>
@@ -356,7 +385,7 @@ export default function AttendancePage() {
             {canWrite && (
               <Link
                 href="/prefects/add"
-                className="px-3 py-1.5 rounded-md text-xs font-medium bg-brand-600 text-white hover:bg-brand-700 transition-colors"
+                className="min-h-11 inline-flex items-center px-3 py-2 rounded-md text-xs font-medium bg-brand-700 text-white hover:bg-brand-800 transition-colors"
               >
                 + Add
               </Link>
@@ -376,8 +405,10 @@ export default function AttendancePage() {
             )}
             */}
             <button
+              type="button"
+              aria-pressed={autoRefresh}
               onClick={() => setAutoRefresh(!autoRefresh)}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${
+              className={`min-h-11 inline-flex items-center px-3 py-2 rounded-md text-xs font-medium border transition-colors ${
                 autoRefresh
                   ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                   : "bg-white text-slate-500 border-slate-200"
@@ -392,7 +423,7 @@ export default function AttendancePage() {
             </button>
             <button
               onClick={fetchData}
-              className="px-3 py-1.5 rounded-md text-xs font-medium bg-slate-800 text-white hover:bg-slate-900 transition-colors"
+              className="min-h-11 inline-flex items-center px-3 py-2 rounded-md text-xs font-medium bg-slate-800 text-white hover:bg-slate-900 transition-colors"
             >
               <IconRefresh className="w-3 h-3 mr-1" />
               Refresh
@@ -414,17 +445,14 @@ export default function AttendancePage() {
           </p>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <StatCard label="Total records" value={totalRecords} />
-          <StatCard label="Unique users" value={uniqueUsers} />
-          <StatCard label="Check ins" value={checkIns} />
-          <StatCard label="Devices online" value={deviceConnected} />
+        {/* Stats */}
+        <div className="mb-8 max-w-xs">
+          <StatCard label="Number of prefects" value={prefectCount} />
         </div>
 
         {/* Error */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          <div role="alert" className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
             <strong>Error:</strong> {error} — Make sure the ADMS server is
             running on port 8088.
           </div>
@@ -432,7 +460,7 @@ export default function AttendancePage() {
 
         {/* Loading */}
         {loading && events.length === 0 && (
-          <div className="flex items-center justify-center py-20">
+          <div className="flex items-center justify-center py-20" role="status">
             <div className="flex flex-col items-center gap-3">
               <div className="w-8 h-8 border-2 border-slate-800 border-t-transparent rounded-full animate-spin" />
               <p className="text-sm text-slate-500">
@@ -473,7 +501,7 @@ export default function AttendancePage() {
                 <button
                   type="button"
                   onClick={() => setShowLatecomers((v) => !v)}
-                  className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${
+                  className={`min-h-11 inline-flex items-center px-3 py-2 rounded-md text-xs font-medium border transition-colors ${
                     showLatecomers
                       ? "bg-red-50 text-red-700 border-red-200"
                       : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
@@ -484,7 +512,7 @@ export default function AttendancePage() {
                     : `Show latecomers${latecomerCount > 0 ? ` (${latecomerCount})` : ""}`}
                 </button>
                 {lastRefresh && (
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-600">
                     Last updated:{" "}
                     {lastRefresh.toLocaleTimeString("en-US", {
                       timeZone: "Asia/Colombo",
@@ -498,10 +526,10 @@ export default function AttendancePage() {
               </div>
             </div>
             {excuseError && (
-              <div className="px-6 py-3 text-sm border-b bg-red-50 border-red-100 text-red-700">
+              <div role="alert" className="px-6 py-3 text-sm border-b bg-red-50 border-red-100 text-red-700">
                 {excuseError}
-                <button onClick={() => setExcuseError(null)} className="ml-2 font-bold" aria-label="Dismiss">
-                  <IconClose className="w-3 h-3" />
+                <button type="button" onClick={() => setExcuseError(null)} className="ml-2 min-h-11 min-w-11 inline-flex items-center justify-center rounded-md" aria-label="Dismiss">
+                  <IconClose className="w-4 h-4" />
                 </button>
               </div>
             )}
@@ -549,7 +577,7 @@ export default function AttendancePage() {
                           : "hover:bg-slate-50/50"
                       }`}
                     >
-                      <td className="px-6 py-3.5 text-sm text-slate-400 font-mono hidden md:table-cell">
+                      <td className="px-6 py-3.5 text-sm text-slate-600 font-mono hidden md:table-cell">
                         {idx + 1}
                       </td>
                       <td className="px-6 py-3.5">
@@ -563,7 +591,7 @@ export default function AttendancePage() {
                             <p className="text-sm font-medium text-slate-800">
                               {event.name || `User ${event.pin}`}
                             </p>
-                            <p className="text-xs text-slate-400 font-mono">
+                            <p className="text-xs text-slate-600 font-mono">
                               PIN: {event.pin}
                             </p>
                           </div>
@@ -582,11 +610,11 @@ export default function AttendancePage() {
                           </span>
                           {eventIsLate(event) &&
                             (event.suspended ? (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-violet-600 text-white">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-violet-600 text-white">
                                 SUSPENDED · LATE
                               </span>
                             ) : (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-600 text-white">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-600 text-white">
                                 LATE
                               </span>
                             ))}
@@ -595,21 +623,23 @@ export default function AttendancePage() {
                               type="button"
                               onClick={() => handleLateExcusal(event, true)}
                               disabled={excusingPin === event.pin}
+                              aria-label={`Excuse ${event.name || event.pin}`}
                               title="Excused on the spot: remove the late mark for today"
-                              className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 transition-colors disabled:opacity-50"
+                              className="min-h-11 inline-flex items-center px-3 rounded-md text-xs font-medium bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 transition-colors disabled:opacity-50"
                             >
                               {excusingPin === event.pin ? "..." : "Excuse"}
                             </button>
                           )}
                           {event.lateExcused && (
-                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
                               LATE EXCUSED
                               {canWrite && (
                                 <button
                                   type="button"
                                   onClick={() => handleLateExcusal(event, false)}
                                   disabled={excusingPin === event.pin}
-                                  className="underline font-medium text-slate-500 hover:text-slate-800 disabled:opacity-50"
+                                  aria-label={`Undo excuse for ${event.name || event.pin}`}
+                                  className="min-h-11 inline-flex items-center px-2 font-medium text-slate-700 underline hover:text-slate-900 disabled:opacity-50"
                                 >
                                   {excusingPin === event.pin ? "..." : "Undo"}
                                 </button>
@@ -618,7 +648,7 @@ export default function AttendancePage() {
                           )}
                         </div>
                         {event.suspended && event.deadline && (
-                          <p className="text-[11px] text-violet-600 mt-0.5">
+                          <p className="text-xs text-violet-600 mt-0.5">
                             Suspended · due by {toTimeNoSeconds(event.deadline)}
                           </p>
                         )}
@@ -635,7 +665,7 @@ export default function AttendancePage() {
                           {getVerifyLabel(event.verifyMethod)}
                         </span>
                       </td>
-                      <td className="px-6 py-3.5 text-xs text-slate-400 font-mono hidden lg:table-cell">
+                      <td className="px-6 py-3.5 text-xs text-slate-600 font-mono hidden lg:table-cell">
                         {event.deviceSN}
                       </td>
                     </tr>
@@ -659,7 +689,7 @@ export default function AttendancePage() {
                   type="button"
                   onClick={handleClearCommandQueue}
                   disabled={clearingQueue}
-                  className="px-3 py-1.5 rounded-md text-xs font-medium border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-colors"
+                  className="min-h-11 inline-flex items-center px-3 py-2 rounded-md text-xs font-medium border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-colors"
                 >
                   {clearingQueue ? "Clearing…" : "Clear command queue"}
                 </button>
@@ -667,6 +697,7 @@ export default function AttendancePage() {
             </div>
             {queueFeedback && (
               <div
+                role={queueFeedback.ok ? "status" : "alert"}
                 className={`px-6 py-3 text-sm border-b ${
                   queueFeedback.ok
                     ? "bg-emerald-50 border-emerald-100 text-emerald-800"
@@ -727,119 +758,101 @@ export default function AttendancePage() {
           </div>
         )}
 
-        {/* Send Notice Dialog */}
-        {noticeOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center">
-            {/* Backdrop */}
-            <div
-              className="absolute inset-0 bg-black/40"
-              onClick={() => !noticeSending && setNoticeOpen(false)}
-            />
-
-            {/* Dialog */}
-            <div className="relative bg-white rounded-lg shadow-xl border border-slate-200 w-full max-w-md mx-4 overflow-hidden">
-              <div className="px-6 py-4 border-b border-slate-100">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-slate-800">
-                    Send notice to device
-                  </h3>
-                  <button
-                    onClick={() => !noticeSending && setNoticeOpen(false)}
-                    aria-label="Close"
-                    className="w-7 h-7 rounded-md bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition-colors"
-                  >
-                    <IconClose className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-                <p className="text-xs text-slate-500 mt-1">
-                  This message will be displayed on the ZKTeco device screen.
-                </p>
+        <Modal
+          isOpen={noticeOpen}
+          dismissible={!noticeSending}
+          onClose={() => {
+            if (!noticeSending) setNoticeOpen(false);
+          }}
+          title="Send notice to device"
+        >
+          <p className="text-xs text-slate-600">
+            This message will be displayed on the ZKTeco device screen.
+          </p>
+          {noticeResult ? (
+            <div className="text-center py-2" role="status">
+              <div className="flex justify-center mb-3 text-emerald-700">
+                <IconCheck className="w-8 h-8" />
               </div>
-
-              <div className="px-6 py-4">
-                {noticeResult ? (
-                  <div className="text-center py-4">
-                    <div className="flex justify-center mb-3 text-emerald-600">
-                      <IconCheck className="w-8 h-8" />
-                    </div>
-                    <p className="text-sm font-medium text-slate-700">
-                      {noticeResult}
-                    </p>
-                    <button
-                      onClick={() => setNoticeOpen(false)}
-                      className="mt-4 px-4 py-2 rounded-md text-sm font-medium bg-slate-800 text-white hover:bg-slate-900 transition-colors"
-                    >
-                      Close
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                      Notice content
-                    </label>
-                    <textarea
-                      value={noticeMessage}
-                      onChange={(e) => setNoticeMessage(e.target.value)}
-                      placeholder="Enter the message to display on the device..."
-                      rows={4}
-                      disabled={noticeSending}
-                      className="w-full px-3 py-2.5 rounded-md border border-slate-300 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 resize-none disabled:opacity-50"
-                    />
-                    <div className="flex items-center justify-between mt-4">
-                      <button
-                        onClick={() => setNoticeOpen(false)}
-                        disabled={noticeSending}
-                        className="px-4 py-2 rounded-md text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors disabled:opacity-50"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={async () => {
-                          if (!noticeMessage.trim()) return;
-                          setNoticeSending(true);
-                          try {
-                            const res = await fetch(apiUrl("/api/sms"), {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ message: noticeMessage.trim() }),
-                            });
-                            const data = await res.json();
-                            if (res.ok) {
-                              setNoticeResult(
-                                `Notice sent to device ${data.deviceSN}. The device will display it on its next poll.`
-                              );
-                            } else {
-                              setNoticeResult(
-                                `Failed: ${data.error || "Unknown error"}`
-                              );
-                            }
-                          } catch (err) {
-                            setNoticeResult(
-                              `Error: ${err instanceof Error ? err.message : "Network error"}`
-                            );
-                          } finally {
-                            setNoticeSending(false);
-                          }
-                        }}
-                        disabled={!noticeMessage.trim() || noticeSending}
-                        className="px-4 py-2 rounded-md text-sm font-medium bg-brand-600 text-white hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {noticeSending ? (
-                          <span className="flex items-center gap-2">
-                            <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            Sending...
-                          </span>
-                        ) : (
-                          "Send notice"
-                        )}
-                      </button>
-                    </div>
-                  </>
-                )}
+              <p className="text-sm font-medium text-slate-700">{noticeResult}</p>
+              <button
+                type="button"
+                onClick={() => setNoticeOpen(false)}
+                className="mt-4 min-h-11 px-4 rounded-md text-sm font-medium bg-slate-800 text-white hover:bg-slate-900 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4">
+              <div>
+                <label htmlFor="notice-message" className="block text-sm font-medium text-slate-700 mb-2">
+                  Notice content
+                </label>
+                <textarea
+                  id="notice-message"
+                  value={noticeMessage}
+                  onChange={(e) => setNoticeMessage(e.target.value)}
+                  placeholder="Enter the message to display on the device..."
+                  rows={4}
+                  disabled={noticeSending}
+                  className="w-full px-3 py-2.5 rounded-md border border-slate-300 text-slate-800 placeholder:text-slate-600 resize-none disabled:opacity-50"
+                />
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={() => setNoticeOpen(false)}
+                  disabled={noticeSending}
+                  className="min-h-11 px-4 rounded-md text-sm font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!noticeMessage.trim()) return;
+                    setNoticeSending(true);
+                    try {
+                      const res = await fetch(apiUrl("/api/sms"), {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ message: noticeMessage.trim() }),
+                      });
+                      const data = await res.json();
+                      if (res.ok) {
+                        setNoticeResult(
+                          `Notice sent to device ${data.deviceSN}. The device will display it on its next poll.`
+                        );
+                      } else {
+                        setNoticeResult(
+                          `Failed: ${data.error || "Unknown error"}`
+                        );
+                      }
+                    } catch (err) {
+                      setNoticeResult(
+                        `Error: ${err instanceof Error ? err.message : "Network error"}`
+                      );
+                    } finally {
+                      setNoticeSending(false);
+                    }
+                  }}
+                  disabled={!noticeMessage.trim() || noticeSending}
+                  className="min-h-11 px-4 rounded-md text-sm font-medium bg-brand-700 text-white hover:bg-brand-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {noticeSending ? (
+                    <span className="flex items-center gap-2">
+                      <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" aria-hidden="true" />
+                      Sending...
+                    </span>
+                  ) : (
+                    "Send notice"
+                  )}
+                </button>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </Modal>
 
         {/* Device Setup Instructions */}
         <div className="mt-8 bg-brand-50 border border-brand-200 rounded-lg p-6">

@@ -1,0 +1,161 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-18T11:45:00.000Z",
+  "title": "Design System: House Prefect Affairs",
+  "extensions": {
+    "colorMeta": {
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "canonical": "#f2f3f1",
+        "tonalRamp": ["#1b1e1d", "#334155", "#475569", "#64748b", "#94a3b8", "#cbd5e1", "#e2e8f0", "#f2f3f1"]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#1b1e1d",
+        "tonalRamp": ["#0f1110", "#1b1e1d", "#334155", "#475569", "#64748b", "#94a3b8", "#cbd5e1", "#f8fafc"]
+      },
+      "action": {
+        "role": "primary",
+        "displayName": "Marigold ink",
+        "canonical": "#8f5413",
+        "tonalRamp": ["#613913", "#744314", "#8f5413", "#b56d15", "#d98a1f", "#e6b964", "#eed39d", "#fbf5ea"]
+      },
+      "action-hover": {
+        "role": "primary",
+        "displayName": "Pressed marigold",
+        "canonical": "#744314",
+        "tonalRamp": ["#613913", "#744314", "#8f5413", "#b56d15", "#d98a1f", "#e6b964", "#eed39d", "#f6e8cc"]
+      },
+      "success-fg": {
+        "role": "success",
+        "displayName": "Present",
+        "canonical": "#047857",
+        "tonalRamp": ["#064e3b", "#065f46", "#047857", "#059669", "#10b981", "#6ee7b7", "#a7f3d0", "#ecfdf5"]
+      },
+      "error-fg": {
+        "role": "error",
+        "displayName": "Absent",
+        "canonical": "#b91c1c",
+        "tonalRamp": ["#7f1d1d", "#991b1b", "#b91c1c", "#dc2626", "#ef4444", "#fca5a5", "#fecaca", "#fef2f2"]
+      },
+      "warning-fg": {
+        "role": "warning",
+        "displayName": "Late",
+        "canonical": "#b45309",
+        "tonalRamp": ["#78350f", "#92400e", "#b45309", "#d97706", "#f59e0b", "#fcd34d", "#fde68a", "#fffbeb"]
+      },
+      "traitor-fg": {
+        "role": "error",
+        "displayName": "Traitor",
+        "canonical": "#be123c",
+        "tonalRamp": ["#881337", "#9f1239", "#be123c", "#e11d48", "#f43f5e", "#fda4af", "#fecdd3", "#fff1f2"]
+      }
+    },
+    "typographyMeta": {
+      "headline": { "displayName": "Headline", "purpose": "Page title in the sticky header, and the date on the home record." },
+      "title": { "displayName": "Title", "purpose": "Section titles inside a sheet." },
+      "body": { "displayName": "Body", "purpose": "Descriptions and table cell text." },
+      "field": { "displayName": "Field", "purpose": "Input, select, and textarea text. 16px so a phone does not zoom on focus." },
+      "label": { "displayName": "Label", "purpose": "Field labels and button labels." },
+      "meta": { "displayName": "Meta", "purpose": "Captions, tab counts, and status chips. The 12px floor." },
+      "data": { "displayName": "Data", "purpose": "PINs, times, and codes." }
+    },
+    "shadows": [
+      { "name": "sheet", "value": "0 1px 2px rgb(0 0 0 / 0.05)", "purpose": "A card at rest." },
+      { "name": "menu", "value": "0 10px 15px -3px rgb(0 0 0 / 0.1)", "purpose": "The header overflow panel." },
+      { "name": "dialog", "value": "0 20px 25px -5px rgb(0 0 0 / 0.1)", "purpose": "A modal." }
+    ],
+    "motion": [
+      { "name": "color", "value": "background-color 0.15s ease", "purpose": "Row and control color changes. Spinners stop under prefers-reduced-motion." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one marigold action on a screen.",
+      "html": "<button class=\"ds-btn-primary\">Save attendance</button>",
+      "css": ".ds-btn-primary { background: #8f5413; color: #fff; font-family: Archivo, system-ui, sans-serif; font-size: 0.875rem; font-weight: 600; border: none; border-radius: 6px; min-height: 44px; padding: 10px 16px; cursor: pointer; } .ds-btn-primary:hover { background: #744314; } .ds-btn-primary:focus-visible { outline: 2px solid #8f5413; outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "A quiet action beside the primary, such as Cancel or Refresh.",
+      "html": "<button class=\"ds-btn-secondary\">Cancel</button>",
+      "css": ".ds-btn-secondary { background: #fff; color: #334155; font-family: Archivo, system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; border: 1px solid #cbd5e1; border-radius: 6px; min-height: 44px; padding: 10px 16px; cursor: pointer; } .ds-btn-secondary:hover { background: #f8fafc; } .ds-btn-secondary:focus-visible { outline: 2px solid #8f5413; outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "A labeled field. Type is 16px so a phone does not zoom on focus.",
+      "html": "<label class=\"ds-label\" for=\"ds-pin\">PIN</label><input class=\"ds-input\" id=\"ds-pin\" placeholder=\"HP001\">",
+      "css": ".ds-label { display: block; font-family: Archivo, system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; color: #334155; margin-bottom: 6px; } .ds-input { width: 100%; box-sizing: border-box; background: #fff; color: #1b1e1d; font-family: Archivo, system-ui, sans-serif; font-size: 1rem; border: 1px solid #cbd5e1; border-radius: 6px; min-height: 44px; padding: 10px 14px; caret-color: #8f5413; } .ds-input::placeholder { color: #475569; } .ds-input:focus-visible { outline: 2px solid #8f5413; outline-offset: 2px; border-color: #8f5413; }"
+    },
+    {
+      "name": "Status Chip",
+      "kind": "chip",
+      "refersTo": "chip-success",
+      "description": "A gate status. The word carries the meaning; the tint repeats it.",
+      "html": "<span class=\"ds-chip\">Present</span>",
+      "css": ".ds-chip { display: inline-flex; align-items: center; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; border-radius: 9999px; font-family: Archivo, system-ui, sans-serif; font-size: 0.75rem; font-weight: 500; padding: 4px 10px; }"
+    },
+    {
+      "name": "Sheet",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "A white record on the paper page.",
+      "html": "<article class=\"ds-card\"><h3 class=\"ds-card-title\">Morning check-in</h3><p class=\"ds-card-meta\">Late after 7:00 AM</p></article>",
+      "css": ".ds-card { background: #fff; color: #1b1e1d; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px rgb(0 0 0 / 0.05); padding: 16px; font-family: Archivo, system-ui, sans-serif; } .ds-card-title { margin: 0 0 4px; font-size: 1.125rem; font-weight: 600; } .ds-card-meta { margin: 0; font-size: 0.75rem; font-weight: 500; color: #475569; }"
+    },
+    {
+      "name": "Header",
+      "kind": "nav",
+      "refersTo": "button-secondary",
+      "description": "Sticky bar: mark, title, and one disclosure for secondary links.",
+      "html": "<header class=\"ds-header\"><span class=\"ds-mark\"></span><div><p class=\"ds-header-title\">House Prefect Affairs</p></div><button class=\"ds-nav-btn\">Navigate</button></header>",
+      "css": ".ds-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #fff; border-bottom: 1px solid #e2e8f0; padding: 12px 16px; font-family: Archivo, system-ui, sans-serif; } .ds-mark { width: 36px; height: 36px; border-radius: 6px; background: #f2f3f1; border: 1px solid #e2e8f0; } .ds-header-title { margin: 0; font-size: 1.125rem; font-weight: 600; color: #0f172a; } .ds-nav-btn { min-height: 44px; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; color: #334155; font-size: 0.875rem; font-weight: 500; cursor: pointer; } .ds-nav-btn:focus-visible { outline: 2px solid #8f5413; outline-offset: 2px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Duty Ledger",
+    "overview": "House Prefect Affairs is the book the house opens every morning. The page is cool paper, the record is ink, and marigold appears only when someone has to act: sign in, save attendance, add a prefect. Density is operational. A screen is a table, a short set of tabs, and one primary button, not a marketing composition.\n\nThe system was taken from the incumbent implementation: Archivo for the interface, IBM Plex Mono for PINs, times, and codes, slate for structure, and the marigold ramp for the single accent. This pass darkened the action fill so white labels clear WCAG AA, and it set 12px as the smallest text.",
+    "keyCharacteristics": [
+      "Flat paper, white sheets, hairline rules",
+      "One accent, used on the action and on the active tab underline",
+      "Status is a word plus a tint, never a color alone",
+      "Mono is for data, not for decoration",
+      "Touch targets on phones are at least 44px; desktop headers may sit slightly tighter"
+    ],
+    "rules": [
+      { "name": "The One Action Rule", "body": "Marigold fills a control the person is about to press. It does not fill cards, page backgrounds, or large decorative regions.", "section": "colors" },
+      { "name": "The Readable Record Rule", "body": "Any fact a prefect's name depends on (PIN, class, code, time) uses caption slate or darker. Disabled controls may be lighter; they are the exception.", "section": "colors" },
+      { "name": "The Floor Rule", "body": "12px is the floor. Saved, Late, and role badges use the meta size, not 10px.", "section": "typography" },
+      { "name": "The Phone Reach Rule", "body": "Header triggers, row actions (Excuse, Delete, Edit), dialog close, and the password reveal control are at least 44px tall on small screens. From 768px up, header icon buttons may return to 36px.", "section": "layout" },
+      { "name": "The Flat Paper Rule", "body": "The page itself has no shadow and no gradient. A shadow means the surface is floating over the ledger for a moment.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do use marigold ink (`#8f5413`) for a primary button that carries white text.",
+      "Do put PINs, class, and codes in caption slate (`#475569`) or darker, at 12px or larger.",
+      "Do keep status as a word on a tinted chip.",
+      "Do use IBM Plex Mono for device data and codes.",
+      "Do scroll a long tab row instead of crushing the labels."
+    ],
+    "donts": [
+      "Don't put white text on the lighter marigold (`#b56d15`). It fails 4.5:1.",
+      "Don't use type smaller than 12px for a badge, count, or caption.",
+      "Don't build a second dialog out of a fixed overlay. Use the shared dialog.",
+      "Don't name a delete control with only \"×\" or an unlabeled icon.",
+      "Don't spend marigold on decoration. One action per region."
+    ]
+  }
+}

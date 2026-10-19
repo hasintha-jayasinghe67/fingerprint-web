@@ -9,6 +9,8 @@ interface ModalProps {
   children: ReactNode;
   /** Wider dialog for forms with large text areas. Default: md. */
   size?: "md" | "lg";
+  /** When false, Escape, the backdrop, and the close button do nothing. */
+  dismissible?: boolean;
 }
 
 export default function Modal({
@@ -17,6 +19,7 @@ export default function Modal({
   title,
   children,
   size = "md",
+  dismissible = true,
 }: ModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
 
@@ -41,7 +44,14 @@ export default function Modal({
   return (
     <dialog
       ref={dialogRef}
+      onCancel={(event) => {
+        if (!dismissible) event.preventDefault();
+      }}
       onClose={onClose}
+      onClick={(event) => {
+        if (!dismissible) return;
+        if (event.target === event.currentTarget) onClose();
+      }}
       className={`m-auto p-0 rounded-lg bg-white border border-slate-200 shadow-xl ${widthClass} backdrop:bg-black/40`}
     >
       <div className="p-5 sm:p-6 flex flex-col gap-4">
@@ -50,8 +60,10 @@ export default function Modal({
             {title}
           </h2>
           <button
+            type="button"
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-md bg-slate-100 text-slate-500 hover:text-slate-700 hover:bg-slate-200 transition-colors shrink-0"
+            disabled={!dismissible}
+            className="min-h-11 min-w-11 md:min-h-9 md:min-w-9 flex items-center justify-center rounded-md bg-slate-100 text-slate-600 hover:text-slate-800 hover:bg-slate-200 transition-colors shrink-0 disabled:opacity-50"
             aria-label="Close"
           >
             <svg
@@ -70,7 +82,7 @@ export default function Modal({
             </svg>
           </button>
         </div>
-        <div>{children}</div>
+        <div className="flex flex-col gap-4">{children}</div>
       </div>
     </dialog>
   );

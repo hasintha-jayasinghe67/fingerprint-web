@@ -98,26 +98,26 @@ export default function AttendanceDatesPage() {
         actions={
           <>
             <HeaderMenu label="Navigate">
-              <Link href="/prefects" role="menuitem" className={headerMenuItemClass}>
+              <Link href="/prefects" className={headerMenuItemClass}>
                 Prefects
               </Link>
-              <Link href="/batches" role="menuitem" className={headerMenuItemClass}>
+              <Link href="/batches" className={headerMenuItemClass}>
                 Batches
               </Link>
-              <Link href="/gate-sheet" role="menuitem" className={headerMenuItemClass}>
+              <Link href="/gate-sheet" className={headerMenuItemClass}>
                 Gate Sheet
               </Link>
-              <Link href="/excuses" role="menuitem" className={headerMenuItemClass}>
+              <Link href="/excuses" className={headerMenuItemClass}>
                 Excuses
               </Link>
-              <Link href="/settings" role="menuitem" className={headerMenuItemClass}>
+              <Link href="/settings" className={headerMenuItemClass}>
                 <IconSettings className="w-3 h-3" />
                 Settings
               </Link>
             </HeaderMenu>
             <Link
               href="/attendance/general"
-              className="px-3 py-1.5 rounded-md text-xs font-medium bg-brand-600 text-white hover:bg-brand-700 transition-colors"
+              className="min-h-11 inline-flex items-center px-3 py-2 rounded-md text-xs font-medium bg-brand-700 text-white hover:bg-brand-800 transition-colors"
             >
               General Attendance
             </Link>
@@ -126,7 +126,7 @@ export default function AttendanceDatesPage() {
                 setLoading(true);
                 fetchData();
               }}
-              className="px-3 py-1.5 rounded-md text-xs font-medium bg-slate-800 text-white hover:bg-slate-900 transition-colors"
+              className="min-h-11 inline-flex items-center px-3 py-2 rounded-md text-xs font-medium bg-slate-800 text-white hover:bg-slate-900 transition-colors"
             >
               <IconRefresh className="w-3 h-3 mr-1" />
               Refresh
@@ -150,7 +150,7 @@ export default function AttendanceDatesPage() {
 
         {/* Error */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          <div role="alert" className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
             <strong>Error:</strong> {error}
           </div>
         )}
@@ -200,7 +200,7 @@ export default function AttendanceDatesPage() {
                           </span>
                         )}
                       </div>
-                      <span className="text-slate-300 group-hover:text-brand-600 transition-colors">
+                      <span className="text-slate-500 group-hover:text-brand-800 transition-colors">
                         <IconArrowRight className="w-4 h-4" />
                       </span>
                     </div>

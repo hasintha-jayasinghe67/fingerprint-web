@@ -129,7 +129,7 @@ export default function AddBatchPage() {
           className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 space-y-6"
         >
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
+            <div role="alert" className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
               {error}
             </div>
           )}
@@ -148,7 +148,7 @@ export default function AddBatchPage() {
               onChange={(e) => setName(e.target.value)}
               required
               placeholder="e.g. Senior Prefects"
-              className="w-full px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500"
+              className="w-full px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 "
             />
           </div>
 
@@ -166,7 +166,7 @@ export default function AddBatchPage() {
                 value={morningSigninTime}
                 onChange={(e) => setMorningSigninTime(e.target.value)}
                 required
-                className="px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 text-lg font-semibold font-mono focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500"
+                className="px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 text-lg font-semibold font-mono "
               />
               <span className="text-sm text-slate-500 pb-2.5">
                 ={" "}
@@ -215,7 +215,7 @@ export default function AddBatchPage() {
                         type="checkbox"
                         checked={selected.has(p.id)}
                         onChange={() => togglePrefect(p.id)}
-                        className="mt-0.5 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                        className="mt-0.5 rounded border-slate-300 text-brand-800"
                       />
                       <span className="min-w-0">
                         <span className="block text-sm font-medium text-slate-800">
@@ -240,7 +240,7 @@ export default function AddBatchPage() {
             <button
               type="submit"
               disabled={submitting || !name.trim()}
-              className="px-5 py-2.5 rounded-md bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-5 py-2.5 rounded-md min-h-11 bg-brand-700 text-white text-sm font-semibold hover:bg-brand-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {submitting ? "Creating…" : "Create batch"}
             </button>

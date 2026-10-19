@@ -22,7 +22,7 @@ export default function PasswordInput({
       <input
         id={id}
         type={visible ? "text" : "password"}
-        className={`w-full pr-10 ${className}`}
+        className={`w-full pr-12 ${className}`}
         {...rest}
       />
       <button
@@ -30,7 +30,7 @@ export default function PasswordInput({
         onClick={() => setVisible((v) => !v)}
         aria-label={visible ? "Hide password" : "Show password"}
         title={visible ? "Hide password" : "Show password"}
-        className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-600 rounded-md transition-colors"
+        className="absolute right-1 top-1/2 -translate-y-1/2 min-h-11 min-w-11 flex items-center justify-center text-slate-600 hover:text-slate-800 rounded-md transition-colors"
       >
         {visible ? (
           <svg

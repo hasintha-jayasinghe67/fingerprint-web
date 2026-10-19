@@ -120,19 +120,19 @@ export default function GateSheetPage() {
         actions={
           <>
             <HeaderMenu label="Navigate">
-              <Link href="/attendance" role="menuitem" className={headerMenuItemClass}>
+              <Link href="/attendance" className={headerMenuItemClass}>
                 Attendance
               </Link>
-              <Link href="/prefects" role="menuitem" className={headerMenuItemClass}>
+              <Link href="/prefects" className={headerMenuItemClass}>
                 Prefects
               </Link>
-              <Link href="/batches" role="menuitem" className={headerMenuItemClass}>
+              <Link href="/batches" className={headerMenuItemClass}>
                 Batches
               </Link>
-              <Link href="/excuses" role="menuitem" className={headerMenuItemClass}>
+              <Link href="/excuses" className={headerMenuItemClass}>
                 Excuses
               </Link>
-              <Link href="/settings" role="menuitem" className={headerMenuItemClass}>
+              <Link href="/settings" className={headerMenuItemClass}>
                 <IconSettings className="w-3 h-3" />
                 Settings
               </Link>
@@ -140,9 +140,9 @@ export default function GateSheetPage() {
             <button
               onClick={handleSave}
               disabled={saving || !dirty}
-              className={`px-4 py-1.5 rounded-md text-xs font-medium transition-colors ${
+              className={`min-h-11 inline-flex items-center px-4 py-1.5 rounded-md text-xs font-medium transition-colors ${
                 dirty
-                  ? "bg-brand-600 text-white hover:bg-brand-700"
+                  ? "bg-brand-700 text-white hover:bg-brand-800"
                   : "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed"
               }`}
             >
@@ -175,7 +175,7 @@ export default function GateSheetPage() {
           </div>
         )}
         {error && (
-          <div className="mb-4 rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+          <div role="alert" className="mb-4 rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
             {error}
           </div>
         )}
@@ -211,12 +211,12 @@ export default function GateSheetPage() {
         {!loading && rows.length === 0 && (
           <div className="rounded-lg border border-dashed border-slate-300 bg-white py-16 text-center">
             <p className="text-slate-600 font-medium">No house prefects yet</p>
-            <p className="text-sm text-slate-400 mt-1">
+            <p className="text-sm text-slate-600 mt-1">
               Add prefects first, then come back to assign gate duties.
             </p>
             <Link
               href="/prefects/add"
-              className="inline-block mt-4 px-4 py-2 rounded-md text-sm font-medium bg-brand-600 text-white hover:bg-brand-700 transition-colors"
+              className="inline-block mt-4 px-4 py-2 rounded-md text-sm font-medium min-h-11 bg-brand-700 text-white hover:bg-brand-800 transition-colors"
             >
               + Add a prefect
             </Link>
@@ -246,7 +246,7 @@ export default function GateSheetPage() {
                   <tr key={r.prefectId} className="hover:bg-slate-50/50">
                     <td className="px-4 py-2.5 sticky left-0 z-[1] bg-white border-b border-slate-100 border-r border-slate-200">
                       <p className="font-medium text-slate-800">{r.name}</p>
-                      <p className="text-xs text-slate-400">
+                      <p className="text-xs text-slate-600">
                         {r.class || "—"}
                         {r.registered && (
                           <span className="ml-1.5 text-emerald-600">
@@ -262,7 +262,7 @@ export default function GateSheetPage() {
                           onChange={(e) =>
                             setCell(r.prefectId, d.key, e.target.value)
                           }
-                          className={`rounded-md border px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 transition-colors ${
+                          className={`rounded-md border px-2 py-2 text-sm transition-colors ${
                             r.days[d.key]
                               ? "border-brand-300 bg-brand-50 font-medium text-brand-800 focus:border-brand-400"
                               : "border-slate-200 bg-white text-slate-700 focus:border-brand-400"
@@ -287,16 +287,16 @@ export default function GateSheetPage() {
         {/* Footer save */}
         {!loading && rows.length > 0 && (
           <div className="mt-6 flex items-center justify-between">
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-600">
               Select an assignment for each day, then save. Saved cells are
               retained and restored next time you open this page.
             </p>
             <button
               onClick={handleSave}
               disabled={saving || !dirty}
-              className={`px-5 py-2.5 rounded-md text-sm font-medium transition-colors ${
+              className={`min-h-11 inline-flex items-center px-5 py-2.5 rounded-md text-sm font-medium transition-colors ${
                 dirty
-                  ? "bg-brand-600 text-white hover:bg-brand-700"
+                  ? "bg-brand-700 text-white hover:bg-brand-800"
                   : "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed"
               }`}
             >

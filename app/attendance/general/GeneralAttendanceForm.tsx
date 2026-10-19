@@ -47,7 +47,7 @@ export default function GeneralAttendanceForm({
   return (
     <form onSubmit={onSubmit} className="space-y-6">
       {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
+        <div role="alert" className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
           {error}
         </div>
       )}
@@ -68,7 +68,7 @@ export default function GeneralAttendanceForm({
             required
             disabled={!canWrite}
             placeholder="e.g. Sports meet duty"
-            className="w-full px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 disabled:bg-slate-50 disabled:text-slate-500"
+            className="w-full px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 disabled:bg-slate-50 disabled:text-slate-500"
           />
         </div>
 
@@ -86,7 +86,7 @@ export default function GeneralAttendanceForm({
             onChange={(e) => onDateChange(e.target.value)}
             required
             disabled={!canWrite}
-            className="px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 disabled:bg-slate-50 disabled:text-slate-500"
+            className="px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 disabled:bg-slate-50 disabled:text-slate-500"
           />
         </div>
       </div>
@@ -129,7 +129,7 @@ export default function GeneralAttendanceForm({
                       key={entry.prefectId}
                       className="hover:bg-slate-50/50 transition-colors"
                     >
-                      <td className="px-6 py-3 text-sm text-slate-400 font-mono hidden sm:table-cell">
+                      <td className="px-6 py-3 text-sm text-slate-600 font-mono hidden sm:table-cell">
                         {idx + 1}
                       </td>
                       <td className="px-6 py-3">
@@ -141,7 +141,7 @@ export default function GeneralAttendanceForm({
                             <p className="text-sm font-medium text-slate-800">
                               {entry.name}
                             </p>
-                            <p className="text-xs text-slate-400">
+                            <p className="text-xs text-slate-600">
                               {entry.class && (
                                 <span className="mr-2 font-medium text-slate-500">
                                   {entry.class}
@@ -164,7 +164,7 @@ export default function GeneralAttendanceForm({
                             onChange={(e) =>
                               onStatusChange(entry.prefectId, e.target.value)
                             }
-                            className={`px-3 py-2 rounded-md border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-500/40 transition-colors ${GATE_STATUS_STYLES[value] || "bg-white border-slate-300 text-slate-700"}`}
+                            className={`px-3 py-2 rounded-md border text-sm font-medium transition-colors ${GATE_STATUS_STYLES[value] || "bg-white border-slate-300 text-slate-700"}`}
                           >
                             {GATE_STATUSES.map((status) => (
                               <option key={status} value={status}>
@@ -194,7 +194,7 @@ export default function GeneralAttendanceForm({
           <button
             type="submit"
             disabled={submitting || !name.trim() || !date}
-            className="px-5 py-2.5 rounded-md bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-5 py-2.5 rounded-md min-h-11 bg-brand-700 text-white text-sm font-semibold hover:bg-brand-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {submitting ? "Saving…" : submitLabel}
           </button>

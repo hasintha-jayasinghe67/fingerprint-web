@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "border-accent-on-rounded",
+        "value": "*",
+        "files": [
+          "app/attendance/*date*/page.tsx"
+        ],
+        "createdAt": "2026-10-18T11:37:46.891Z",
+        "reason": "Agent: gate-duty tab underline uses border-b-2 with rounded-t corners, not a thick accent wrapping a rounded card"
+      }
+    ]
+  }
+}

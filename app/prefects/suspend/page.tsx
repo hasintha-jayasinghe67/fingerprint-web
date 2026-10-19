@@ -33,7 +33,7 @@ type Filter = "all" | Status;
 type Tab = "prefects" | "past";
 
 const inputClass =
-  "w-full px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-colors";
+  "w-full px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 text-sm transition-colors";
 
 // -------------------------------------------------------
 // Helpers
@@ -315,10 +315,10 @@ export default function SuspendPrefectsPage() {
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {feedback && (
-          <div className={`mb-4 p-3 rounded-md text-sm ${feedback.ok ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
-            {feedback.msg}
-            <button onClick={() => setFeedback(null)} className="ml-2 font-bold" aria-label="Dismiss">
-              <IconClose className="w-3 h-3" />
+          <div role={feedback.ok ? "status" : "alert"} className={`mb-4 p-3 rounded-md text-sm flex items-center justify-between gap-3 ${feedback.ok ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
+            <p>{feedback.msg}</p>
+            <button type="button" onClick={() => setFeedback(null)} className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-md shrink-0" aria-label="Dismiss">
+              <IconClose className="w-4 h-4" />
             </button>
           </div>
         )}
@@ -330,7 +330,7 @@ export default function SuspendPrefectsPage() {
         )}
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-6">
+        <div className="flex gap-2 mb-6 overflow-x-auto" aria-label="Suspension sections">
           {([
             { id: "prefects", label: "Prefects" },
             { id: "past", label: `Past suspensions${pastTotal ? ` (${pastTotal})` : ""}` },
@@ -338,8 +338,9 @@ export default function SuspendPrefectsPage() {
             <button
               key={t.id}
               type="button"
+              aria-pressed={tab === t.id}
               onClick={() => setTab(t.id)}
-              className={`flex-1 px-4 sm:px-5 py-2.5 rounded-md text-sm font-semibold transition-colors ${
+              className={`shrink-0 min-h-11 flex-1 px-4 sm:px-5 py-2.5 rounded-md text-sm font-semibold transition-colors ${
                 tab === t.id
                   ? "bg-slate-800 text-white"
                   : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
@@ -452,14 +453,14 @@ export default function SuspendPrefectsPage() {
                               </span>
                             )}
                             {current && (
-                              <p className="text-[11px] text-slate-500 mt-1">{formatRange(current)}</p>
+                              <p className="text-xs text-slate-500 mt-1">{formatRange(current)}</p>
                             )}
                           </td>
                           <td className="px-6 py-3.5 text-right">
                             {(canWrite || historyCount > 0) && (
                               <button
                                 onClick={() => openManage(p)}
-                                className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                                className={`min-h-11 inline-flex items-center px-3 rounded-md text-xs font-medium border transition-colors ${
                                   canWrite && status === "active"
                                     ? "bg-white text-violet-700 border-violet-300 hover:bg-violet-50"
                                     : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
@@ -611,13 +612,16 @@ export default function SuspendPrefectsPage() {
 
       <Modal
         isOpen={managing !== null}
-        onClose={() => !saving && setManaging(null)}
+        dismissible={!saving}
+        onClose={() => {
+          if (!saving) setManaging(null);
+        }}
         title={managing ? `Suspensions — ${managing.name}` : "Suspensions"}
         size="lg"
       >
         <div className="space-y-5">
           {formError && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
+            <div role="alert" className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
               {formError}
             </div>
           )}
@@ -638,7 +642,7 @@ export default function SuspendPrefectsPage() {
                       <p className="text-sm text-slate-800">
                         {formatRange(s)}
                         {isActiveOn(s, today) && (
-                          <span className="ml-2 text-[11px] font-medium text-violet-700">Current</span>
+                          <span className="ml-2 text-xs font-medium text-violet-700">Current</span>
                         )}
                       </p>
                       {s.reason && (
@@ -652,7 +656,7 @@ export default function SuspendPrefectsPage() {
                             type="button"
                             onClick={() => handleEndToday(s)}
                             disabled={saving}
-                            className="px-2 py-1 rounded-md text-xs font-medium bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 disabled:opacity-50"
+                            className="min-h-11 inline-flex items-center px-3 rounded-md text-xs font-medium bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 disabled:opacity-50"
                           >
                             End today
                           </button>
@@ -661,7 +665,7 @@ export default function SuspendPrefectsPage() {
                           type="button"
                           onClick={() => startEdit(s)}
                           disabled={saving}
-                          className="px-2 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 disabled:opacity-50"
+                          className="min-h-11 inline-flex items-center px-3 rounded-md text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 disabled:opacity-50"
                         >
                           Edit
                         </button>
@@ -669,10 +673,10 @@ export default function SuspendPrefectsPage() {
                           type="button"
                           onClick={() => handleDelete(s)}
                           disabled={saving}
-                          className="px-2 py-1 rounded-md text-xs text-slate-400 hover:text-red-500 hover:bg-red-50 disabled:opacity-50"
-                          aria-label="Delete suspension"
+                          className="min-h-11 inline-flex items-center px-3 rounded-md text-xs font-medium text-red-700 bg-red-50 border border-red-200 hover:bg-red-100 disabled:opacity-50"
+                          aria-label={`Delete suspension ${formatRange(s)}`}
                         >
-                          ×
+                          Delete
                         </button>
                       </div>
                     )}
@@ -691,7 +695,7 @@ export default function SuspendPrefectsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    Start date <span className="text-red-500">*</span>
+                    Start date <span className="text-red-700">*</span>
                   </label>
                   <input
                     type="date"
@@ -703,7 +707,7 @@ export default function SuspendPrefectsPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    End date <span className="text-slate-400 font-normal">(blank = ongoing)</span>
+                    End date <span className="text-slate-600 font-normal">(blank = ongoing)</span>
                   </label>
                   <input
                     type="date"
@@ -716,7 +720,7 @@ export default function SuspendPrefectsPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Reason <span className="text-slate-400 font-normal">(optional)</span>
+                  Reason <span className="text-slate-600 font-normal">(optional)</span>
                 </label>
                 <input
                   type="text"
@@ -745,7 +749,7 @@ export default function SuspendPrefectsPage() {
                 <button
                   type="submit"
                   disabled={saving || !formStart}
-                  className="px-4 py-2 rounded-md text-sm font-medium bg-brand-600 text-white hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 rounded-md text-sm font-medium min-h-11 bg-brand-700 text-white hover:bg-brand-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {saving ? "Saving..." : editingId ? "Save changes" : "Add suspension"}
                 </button>

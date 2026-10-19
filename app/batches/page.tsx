@@ -199,20 +199,20 @@ export default function BatchesPage() {
         actions={
           <>
             <HeaderMenu label="Navigate">
-              <Link href="/attendance" role="menuitem" className={headerMenuItemClass}>
+              <Link href="/attendance" className={headerMenuItemClass}>
                 Attendance
               </Link>
-              <Link href="/prefects" role="menuitem" className={headerMenuItemClass}>
+              <Link href="/prefects" className={headerMenuItemClass}>
                 Prefects
               </Link>
-              <Link href="/gate-sheet" role="menuitem" className={headerMenuItemClass}>
+              <Link href="/gate-sheet" className={headerMenuItemClass}>
                 Gate Sheet
               </Link>
-              <Link href="/excuses" role="menuitem" className={headerMenuItemClass}>
+              <Link href="/excuses" className={headerMenuItemClass}>
                 Excuses
               </Link>
               {canWrite && (
-                <Link href="/settings" role="menuitem" className={headerMenuItemClass}>
+                <Link href="/settings" className={headerMenuItemClass}>
                   <IconSettings className="w-3 h-3" />
                   Settings
                 </Link>
@@ -221,7 +221,7 @@ export default function BatchesPage() {
             {canWrite && (
               <Link
                 href="/batches/add"
-                className="px-4 py-2 rounded-md bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 transition-colors"
+                className="px-4 py-2 rounded-md min-h-11 bg-brand-700 text-white text-sm font-semibold hover:bg-brand-800 transition-colors"
               >
                 + Add Batch
               </Link>
@@ -233,19 +233,21 @@ export default function BatchesPage() {
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {feedback && (
           <div
-            className={`mb-4 p-3 rounded-md text-sm ${
+            role={feedback.ok ? "status" : "alert"}
+            className={`mb-4 p-3 rounded-md text-sm flex items-center justify-between gap-3 ${
               feedback.ok
                 ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                 : "bg-red-50 text-red-700 border border-red-200"
             }`}
           >
-            {feedback.msg}
+            <p>{feedback.msg}</p>
             <button
+              type="button"
               onClick={() => setFeedback(null)}
-              className="ml-2 font-bold"
+              className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-md shrink-0"
               aria-label="Dismiss"
             >
-              <IconClose className="w-3 h-3" />
+              <IconClose className="w-4 h-4" />
             </button>
           </div>
         )}
@@ -268,7 +270,7 @@ export default function BatchesPage() {
             {canWrite && (
               <Link
                 href="/batches/add"
-                className="inline-flex px-5 py-2.5 rounded-md bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 transition-colors"
+                className="inline-flex px-5 py-2.5 rounded-md min-h-11 bg-brand-700 text-white text-sm font-semibold hover:bg-brand-800 transition-colors"
               >
                 + Add Batch
               </Link>
@@ -330,7 +332,7 @@ export default function BatchesPage() {
                       <td className="px-6 py-3.5 text-sm text-slate-600 hidden sm:table-cell">
                         {b.memberCount}
                         {b.members.length > 0 && (
-                          <span className="text-slate-400 ml-1">
+                          <span className="text-slate-600 ml-1">
                             (
                             {b.members
                               .slice(0, 3)
@@ -347,7 +349,7 @@ export default function BatchesPage() {
                             checked={b.extended}
                             disabled={!canWrite || togglingId === b.id}
                             onChange={() => handleToggleExtended(b)}
-                            className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                            className="rounded border-slate-300 text-brand-800"
                           />
                           {b.extended ? "On" : "Off"}
                         </label>
@@ -357,14 +359,15 @@ export default function BatchesPage() {
                           <div className="flex items-center justify-end gap-2">
                             <button
                               onClick={() => openEdit(b)}
-                              className="px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+                              className="min-h-11 inline-flex items-center px-3 rounded-md text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
                             >
                               Edit
                             </button>
                             <button
                               onClick={() => handleDelete(b)}
                               disabled={deletingId === b.id}
-                              className="px-2.5 py-1 rounded-md text-xs font-medium bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 disabled:opacity-50 transition-colors"
+                              aria-label={`Delete ${b.name}`}
+                              className="min-h-11 inline-flex items-center px-3 rounded-md text-xs font-medium bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 disabled:opacity-50 transition-colors"
                             >
                               {deletingId === b.id ? "…" : "Delete"}
                             </button>
@@ -388,7 +391,7 @@ export default function BatchesPage() {
       >
         <form onSubmit={handleSaveEdit} className="space-y-4">
           {editError && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
+            <div role="alert" className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
               {editError}
             </div>
           )}
@@ -401,7 +404,7 @@ export default function BatchesPage() {
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
               required
-              className="w-full px-3 py-2 rounded-md border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500"
+              className="w-full px-3 py-2 rounded-md border border-slate-300 text-slate-900 "
             />
           </div>
           <div>
@@ -413,7 +416,7 @@ export default function BatchesPage() {
               value={editTime}
               onChange={(e) => setEditTime(e.target.value)}
               required
-              className="px-3 py-2 rounded-md border border-slate-300 text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500"
+              className="px-3 py-2 rounded-md border border-slate-300 text-slate-900 font-mono "
             />
             <p className="text-xs text-slate-500 mt-1">
               = {format12(editTime || "07:30")}
@@ -424,7 +427,7 @@ export default function BatchesPage() {
               type="checkbox"
               checked={editExtended}
               onChange={(e) => setEditExtended(e.target.checked)}
-              className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+              className="rounded border-slate-300 text-brand-800"
             />
             Extended — members must meet this time even without gate duty
           </label>
@@ -450,7 +453,7 @@ export default function BatchesPage() {
                         type="checkbox"
                         checked={editSelected.has(p.id)}
                         onChange={() => togglePrefect(p.id)}
-                        className="mt-0.5 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                        className="mt-0.5 rounded border-slate-300 text-brand-800"
                       />
                       <span className="min-w-0">
                         <span className="block text-sm font-medium text-slate-800">
@@ -482,7 +485,7 @@ export default function BatchesPage() {
             <button
               type="submit"
               disabled={editSaving}
-              className="px-4 py-2 rounded-md bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 disabled:opacity-50"
+              className="px-4 py-2 rounded-md min-h-11 bg-brand-700 text-white text-sm font-semibold hover:bg-brand-800 disabled:opacity-50"
             >
               {editSaving ? "Saving…" : "Save"}
             </button>

@@ -121,7 +121,7 @@ export default function SettingsPage() {
           </p>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
+            <div role="alert" className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
               {error}
             </div>
           )}
@@ -137,7 +137,7 @@ export default function SettingsPage() {
               </p>
               <Link
                 href="/batches/add"
-                className="inline-flex px-4 py-2 rounded-md bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 transition-colors"
+                className="inline-flex px-4 py-2 rounded-md min-h-11 bg-brand-700 text-white text-sm font-semibold hover:bg-brand-800 transition-colors"
               >
                 + Add Batch
               </Link>
@@ -172,7 +172,7 @@ export default function SettingsPage() {
                         type="time"
                         value={b.morningSigninTime}
                         onChange={(e) => updateTime(b.id, e.target.value)}
-                        className="px-3 py-2 rounded-md border border-slate-300 bg-white text-slate-900 font-semibold font-mono focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500"
+                        className="px-3 py-2 rounded-md border border-slate-300 bg-white text-slate-900 font-semibold font-mono "
                       />
                     </div>
                     <div className="text-sm text-slate-500 pb-2">
@@ -189,7 +189,7 @@ export default function SettingsPage() {
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="px-5 py-2.5 rounded-md bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-5 py-2.5 rounded-md min-h-11 bg-brand-700 text-white text-sm font-semibold hover:bg-brand-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {saving ? "Saving..." : "Save times"}
                 </button>

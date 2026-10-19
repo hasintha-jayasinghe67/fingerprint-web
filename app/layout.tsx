@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Archivo, IBM_Plex_Mono } from "next/font/google";
 import { AuthProvider } from "@/lib/AuthContext";
 import "./globals.css";
@@ -16,6 +16,12 @@ const plexMono = IBM_Plex_Mono({
   display: "swap",
 });
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 export const metadata: Metadata = {
   title: "House Prefect Affairs",
   description: "House prefect attendance management system",
@@ -31,7 +37,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${archivo.variable} ${plexMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-paper text-ink">
+      <body className="min-h-full flex flex-col bg-paper text-ink pb-[env(safe-area-inset-bottom)]">
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

@@ -52,13 +52,12 @@ export default function SiteHeader({
   const accountMenu = (
     <HeaderMenu label={user?.username ?? "Account"}>
       {isAdminOrAbove(user) && (
-        <Link href="/users" role="menuitem" className={headerMenuItemClass}>
+        <Link href="/users" className={headerMenuItemClass}>
           Users
         </Link>
       )}
       <button
         type="button"
-        role="menuitem"
         onClick={() => setChangePasswordOpen(true)}
         className={headerMenuItemClass}
       >
@@ -66,9 +65,8 @@ export default function SiteHeader({
       </button>
       <button
         type="button"
-        role="menuitem"
         onClick={() => void handleLogout()}
-        className={`${headerMenuItemClass} text-red-600 hover:bg-red-50 hover:text-red-700`}
+        className={`${headerMenuItemClass} text-red-700 hover:bg-red-50 hover:text-red-800`}
       >
         Log out
       </button>
@@ -81,7 +79,7 @@ export default function SiteHeader({
       {isAdminOrAbove(user) && (
         <Link
           href="/users"
-          className="px-3 py-1.5 rounded-md text-xs font-medium bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+          className="min-h-11 px-3 py-2 rounded-md text-sm font-medium bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
         >
           Users
         </Link>
@@ -89,14 +87,14 @@ export default function SiteHeader({
       <button
         type="button"
         onClick={() => setChangePasswordOpen(true)}
-        className="px-3 py-1.5 rounded-md text-xs font-medium bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+        className="min-h-11 px-3 py-2 rounded-md text-sm font-medium bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
       >
         Change password
       </button>
       <button
         type="button"
         onClick={() => void handleLogout()}
-        className="px-3 py-1.5 rounded-md text-xs font-medium bg-white text-slate-600 border border-slate-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+        className="min-h-11 px-3 py-2 rounded-md text-sm font-medium bg-white text-slate-700 border border-slate-200 hover:bg-red-50 hover:text-red-700 hover:border-red-200"
       >
         Log out
       </button>
@@ -145,7 +143,7 @@ export default function SiteHeader({
               <Link
                 href="/"
                 aria-label="House Prefect Affairs home"
-                className="w-9 h-9 shrink-0 rounded-md overflow-hidden ring-1 ring-slate-200 hover:ring-slate-300 transition-shadow"
+                className="w-11 h-11 shrink-0 rounded-md overflow-hidden ring-1 ring-slate-200 hover:ring-slate-300 transition-shadow"
               >
                 <Image
                   src="/ICON.jpeg"
@@ -158,11 +156,12 @@ export default function SiteHeader({
               </Link>
               {backTo && (
                 <button
+                  type="button"
                   onClick={() =>
                     backTo === "back" ? router.back() : router.push(backTo)
                   }
                   aria-label="Go back"
-                  className="w-9 h-9 shrink-0 rounded-md bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors active:scale-95"
+                  className="min-h-11 min-w-11 md:min-h-9 md:min-w-9 shrink-0 rounded-md bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 transition-colors"
                 >
                   <IconArrowLeft className="w-4 h-4" />
                 </button>
@@ -191,10 +190,11 @@ export default function SiteHeader({
                     <div className="md:hidden relative shrink-0">
                       <button
                         ref={buttonRef}
+                        type="button"
                         onClick={() => setMenuOpen((v) => !v)}
                         aria-label="Toggle menu"
                         aria-expanded={menuOpen}
-                        className="w-9 h-9 rounded-md bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors active:scale-95"
+                        className="min-h-11 min-w-11 rounded-md bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 transition-colors"
                       >
                         {menuOpen ? (
                           <IconClose className="w-4.5 h-4.5" />

@@ -81,7 +81,7 @@ export default function ChangePasswordModal({
   };
 
   const fieldClass =
-    "w-full px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500";
+    "w-full px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 text-sm placeholder:text-slate-600";
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Change password">
@@ -151,7 +151,7 @@ export default function ChangePasswordModal({
           />
         </div>
         {error && (
-          <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+          <div role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2">
             {error}
           </div>
         )}
@@ -159,7 +159,7 @@ export default function ChangePasswordModal({
           <button
             onClick={handleSubmit}
             disabled={busy}
-            className="flex-1 px-4 py-2.5 rounded-md bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 disabled:opacity-60 transition-colors"
+            className="flex-1 px-4 py-2.5 rounded-md min-h-11 bg-brand-700 text-white text-sm font-semibold hover:bg-brand-800 disabled:opacity-60 transition-colors"
           >
             {busy ? "Changing..." : "Change password"}
           </button>

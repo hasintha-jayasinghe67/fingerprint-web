@@ -68,7 +68,7 @@ export default function ConfirmPasswordModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title}>
       <div className="flex flex-col gap-4">
-        <div className="bg-red-50 border border-red-200 rounded-md p-3 text-sm text-red-700">
+        <div role="alert" className="bg-red-50 border border-red-200 rounded-md p-3 text-sm text-red-700">
           {message}
         </div>
         <div>
@@ -90,11 +90,11 @@ export default function ConfirmPasswordModal({
                 handleConfirm();
               }
             }}
-            className="w-full px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-400"
+            className="w-full px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 text-sm placeholder:text-slate-600"
           />
         </div>
         {error && (
-          <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+          <div role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2">
             {error}
           </div>
         )}

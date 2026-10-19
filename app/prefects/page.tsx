@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { apiUrl } from "@/lib/api";
 import SiteHeader from "@/components/site-header";
+import Modal from "@/components/Modal";
 import { IconRefresh, IconClose } from "@/components/icons";
 
 // -------------------------------------------------------
@@ -215,7 +216,7 @@ export default function PrefectsPage() {
             </Link>
             <Link
               href="/prefects/add"
-              className="px-4 py-2 rounded-md bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 transition-colors"
+              className="px-4 py-2 rounded-md min-h-11 bg-brand-700 text-white text-sm font-semibold hover:bg-brand-800 transition-colors"
             >
               + Add Prefect
             </Link>
@@ -226,10 +227,10 @@ export default function PrefectsPage() {
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Feedback toast */}
         {feedback && (
-          <div className={`mb-4 p-3 rounded-md text-sm ${feedback.ok ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
-            {feedback.msg}
-            <button onClick={() => setFeedback(null)} className="ml-2 font-bold" aria-label="Dismiss">
-              <IconClose className="w-3 h-3" />
+          <div role={feedback.ok ? "status" : "alert"} className={`mb-4 p-3 rounded-md text-sm flex items-center justify-between gap-3 ${feedback.ok ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
+            <p>{feedback.msg}</p>
+            <button type="button" onClick={() => setFeedback(null)} className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-md shrink-0" aria-label="Dismiss">
+              <IconClose className="w-4 h-4" />
             </button>
           </div>
         )}
@@ -252,7 +253,7 @@ export default function PrefectsPage() {
             </p>
             <Link
               href="/prefects/add"
-              className="inline-flex px-5 py-2.5 rounded-md bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 transition-colors"
+              className="inline-flex px-5 py-2.5 rounded-md min-h-11 bg-brand-700 text-white text-sm font-semibold hover:bg-brand-800 transition-colors"
             >
               + Add House Prefect
             </Link>
@@ -290,13 +291,18 @@ export default function PrefectsPage() {
                 <tbody className="divide-y divide-slate-100">
                   {prefects.map((p, idx) => (
                     <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="px-6 py-3.5 text-sm text-slate-400 font-mono hidden md:table-cell">{idx + 1}</td>
+                      <td className="px-6 py-3.5 text-sm text-slate-600 font-mono hidden md:table-cell">{idx + 1}</td>
                       <td className="px-6 py-3.5">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-600 text-xs font-semibold">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-600 text-xs font-semibold shrink-0">
                             {p.name.charAt(0).toUpperCase()}
                           </div>
-                          <span className="text-sm font-medium text-slate-800">{p.name}</span>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-slate-800 truncate">{p.name}</p>
+                            {p.class && (
+                              <p className="text-xs text-slate-600 md:hidden truncate">{p.class}</p>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-3.5 text-sm text-slate-600 hidden md:table-cell">
@@ -328,14 +334,14 @@ export default function PrefectsPage() {
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => openEdit(p)}
-                            className="px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+                            className="min-h-11 inline-flex items-center px-3 rounded-md text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
                           >
                             Edit
                           </button>
                           {!p.registered && registeringId !== p.id && (
                             <button
                               onClick={() => handleRegister(p.id)}
-                              className="px-2.5 py-1 rounded-md text-xs font-medium bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 transition-colors"
+                              className="min-h-11 inline-flex items-center px-3 rounded-md text-xs font-medium bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 transition-colors"
                             >
                               Enroll
                             </button>
@@ -344,17 +350,19 @@ export default function PrefectsPage() {
                             <button
                               onClick={() => handleUnenroll(p.id)}
                               disabled={unenrollingId === p.id}
-                              className="px-2.5 py-1 rounded-md text-xs font-medium bg-white text-amber-700 border border-amber-300 hover:bg-amber-50 transition-colors disabled:opacity-50"
+                              className="min-h-11 inline-flex items-center px-3 rounded-md text-xs font-medium bg-white text-amber-700 border border-amber-300 hover:bg-amber-50 transition-colors disabled:opacity-50"
                             >
                               {unenrollingId === p.id ? "..." : "Unenroll"}
                             </button>
                           )}
                           <button
+                            type="button"
                             onClick={() => handleDelete(p.id)}
                             disabled={deletingId === p.id}
-                            className="px-2 py-1 rounded-md text-xs text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
+                            aria-label={`Delete ${p.name}`}
+                            className="min-h-11 px-3 rounded-md text-xs font-medium text-red-700 bg-red-50 border border-red-200 hover:bg-red-100 transition-colors disabled:opacity-50"
                           >
-                            {deletingId === p.id ? "..." : "×"}
+                            {deletingId === p.id ? "..." : "Delete"}
                           </button>
                         </div>
                       </td>
@@ -367,85 +375,85 @@ export default function PrefectsPage() {
         )}
       </main>
 
-      {/* Edit modal */}
-      {editing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/40"
-            onClick={() => !editSaving && setEditing(null)}
-          />
-          <div className="relative bg-white rounded-lg shadow-xl border border-slate-200 w-full max-w-md mx-4 overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100">
-              <h3 className="font-semibold text-slate-800">Edit Prefect</h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                PIN {editing.pin} — if the name changes, the fingerprint device
-                is updated too.
-              </p>
+      <Modal
+        isOpen={editing !== null}
+        dismissible={!editSaving}
+        onClose={() => {
+          if (!editSaving) setEditing(null);
+        }}
+        title="Edit prefect"
+      >
+        {editing && (
+          <form onSubmit={handleSaveEdit} className="flex flex-col gap-4">
+            <p className="text-xs text-slate-600">
+              PIN {editing.pin}. If the name changes, the fingerprint device
+              is updated too.
+            </p>
+            {editError && (
+              <div role="alert" className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
+                {editError}
+              </div>
+            )}
+            <div>
+              <label htmlFor="edit-prefect-name" className="block text-sm font-medium text-slate-700 mb-1.5">
+                Name <span className="text-red-700">*</span>
+              </label>
+              <input
+                id="edit-prefect-name"
+                type="text"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                required
+                className="w-full px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 transition-colors"
+              />
             </div>
-            <form onSubmit={handleSaveEdit} className="px-6 py-4 space-y-4">
-              {editError && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
-                  {editError}
-                </div>
-              )}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  required
-                  className="w-full px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-colors"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Class <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={editClass}
-                  onChange={(e) => setEditClass(e.target.value)}
-                  required
-                  placeholder="e.g. 10A"
-                  className="w-full px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-colors"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Code <span className="text-slate-400 font-normal">(optional)</span>
-                </label>
-                <input
-                  type="text"
-                  value={editCode}
-                  onChange={(e) => setEditCode(e.target.value)}
-                  placeholder="e.g. HP001"
-                  className="w-full px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-colors"
-                />
-              </div>
-              <div className="flex items-center justify-between pt-2">
-                <button
-                  type="button"
-                  onClick={() => setEditing(null)}
-                  disabled={editSaving}
-                  className="px-4 py-2 rounded-md text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={editSaving || !editName.trim() || !editClass.trim()}
-                  className="px-4 py-2 rounded-md text-sm font-medium bg-brand-600 text-white hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {editSaving ? "Saving..." : "Save Changes"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+            <div>
+              <label htmlFor="edit-prefect-class" className="block text-sm font-medium text-slate-700 mb-1.5">
+                Class <span className="text-red-700">*</span>
+              </label>
+              <input
+                id="edit-prefect-class"
+                type="text"
+                value={editClass}
+                onChange={(e) => setEditClass(e.target.value)}
+                required
+                placeholder="e.g. 10A"
+                className="w-full px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 transition-colors"
+              />
+            </div>
+            <div>
+              <label htmlFor="edit-prefect-code" className="block text-sm font-medium text-slate-700 mb-1.5">
+                Code <span className="text-slate-600 font-normal">(optional)</span>
+              </label>
+              <input
+                id="edit-prefect-code"
+                type="text"
+                value={editCode}
+                onChange={(e) => setEditCode(e.target.value)}
+                placeholder="e.g. HP001"
+                className="w-full px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 transition-colors"
+              />
+            </div>
+            <div className="flex items-center justify-between gap-3 pt-1">
+              <button
+                type="button"
+                onClick={() => setEditing(null)}
+                disabled={editSaving}
+                className="min-h-11 px-4 rounded-md text-sm font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={editSaving || !editName.trim() || !editClass.trim()}
+                className="min-h-11 px-4 rounded-md text-sm font-medium bg-brand-700 text-white hover:bg-brand-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {editSaving ? "Saving..." : "Save changes"}
+              </button>
+            </div>
+          </form>
+        )}
+      </Modal>
     </div>
   );
 }
