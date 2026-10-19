@@ -106,6 +106,9 @@ export default function TieDutiesPage() {
   const [dutyDate, setDutyDate] = useState(todaySriLankan);
   const [count, setCount] = useState("");
   const [selectedBatchIds, setSelectedBatchIds] = useState<Set<number>>(new Set());
+  /** Names/codes/PINs excluded from random selection (one per line). */
+  const [exemptList, setExemptList] = useState("");
+  const [exemptLoading, setExemptLoading] = useState(false);
   const [assigning, setAssigning] = useState(false);
   const [assignError, setAssignError] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -137,6 +140,61 @@ export default function TieDutiesPage() {
   useEffect(() => {
     fetchAll();
   }, [fetchAll]);
+
+  // Prefill exemptions from leave excuses covering the duty date.
+  useEffect(() => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dutyDate)) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        setExemptLoading(true);
+        const res = await fetch(
+          apiUrl(`/api/leave-excuses?date=${encodeURIComponent(dutyDate)}`)
+        );
+        const data = await readApiJson<{
+          excuses?: {
+            prefects: {
+              id: number;
+              name: string;
+              code: string | null;
+              pin?: string | null;
+            }[];
+          }[];
+          error?: string;
+        }>(res);
+        if (cancelled) return;
+        if (!res.ok) {
+          // Table may be missing on older deploys — leave the field editable empty.
+          setExemptList("");
+          return;
+        }
+        const seen = new Set<string>();
+        const lines: string[] = [];
+        for (const excuse of data.excuses || []) {
+          for (const p of excuse.prefects || []) {
+            const label = (p.code || p.name || p.pin || "").trim();
+            if (!label) continue;
+            const key = label.toLowerCase().replace(/[^a-z0-9]+/g, "");
+            if (!key || seen.has(key)) continue;
+            seen.add(key);
+            lines.push(label);
+          }
+        }
+        lines.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+        setExemptList(lines.join("\n"));
+        setDraft(null);
+      } catch {
+        if (!cancelled) setExemptList("");
+      } finally {
+        if (!cancelled) setExemptLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [dutyDate]);
 
   const poolSize = useMemo(
     () =>
@@ -177,6 +235,7 @@ export default function TieDutiesPage() {
         count: countNum,
         batchIds: [...selectedBatchIds],
         excludePrefectIds,
+        exemptText: exemptList,
       }),
     });
     const data = await readApiJson<{
@@ -398,7 +457,12 @@ export default function TieDutiesPage() {
                 <input
                   type="date"
                   value={dutyDate}
-                  onChange={(e) => setDutyDate(e.target.value)}
+                  onChange={(e) => {
+                    setDutyDate(e.target.value);
+                    setDraft(null);
+                    setLastResult(null);
+                    setAssignError(null);
+                  }}
                   required
                   className="w-full sm:w-48 px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 text-sm transition-colors"
                 />
@@ -467,7 +531,40 @@ export default function TieDutiesPage() {
                     ? "Select at least one batch."
                     : `${poolSize} house prefect${poolSize !== 1 ? "s" : ""} in the selected batches.`}{" "}
                   Everyone suspended on the duty date is put on duty automatically (from any
-                  batch) and counts towards the number above; the rest are picked at random.
+                  batch) and counts towards the number above; the rest are picked at random
+                  after exemptions.
+                </p>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="tie-exempt-list"
+                  className="block text-sm font-medium text-slate-700 mb-1.5"
+                >
+                  Exempt from random selection
+                  {exemptLoading && (
+                    <span className="ml-2 text-xs font-normal text-slate-500">
+                      Loading leave excuses…
+                    </span>
+                  )}
+                </label>
+                <textarea
+                  id="tie-exempt-list"
+                  rows={6}
+                  value={exemptList}
+                  onChange={(e) => {
+                    setExemptList(e.target.value);
+                    setDraft(null);
+                  }}
+                  placeholder={
+                    "One code, name, or PIN per line\n(auto-filled from leave excuses for this date)"
+                  }
+                  className="w-full px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 text-sm font-mono transition-colors resize-y min-h-[8rem]"
+                />
+                <p className="text-xs mt-2 text-slate-500">
+                  Prefects listed here are skipped when drawing at random. The list is
+                  filled automatically from leave excuses covering the duty date; you can
+                  add or remove lines. Suspended prefects are still included on duty.
                 </p>
               </div>
               </fieldset>
