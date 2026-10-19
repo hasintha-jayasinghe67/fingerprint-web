@@ -76,12 +76,20 @@ interface DayBatch {
   extended: boolean;
 }
 
+interface LeaveExcuseLists {
+  es: string;
+  eg: string;
+  esPrefectIds: number[];
+  egPrefectIds: number[];
+}
+
 interface DayData {
   date: string;
   batches: DayBatch[];
   gateSaved: boolean;
   dayOfWeek: number;
   gateEntries: GateEntry[];
+  leaveExcuses?: LeaveExcuseLists;
   slots: {
     morning: SlotEntry[];
     second: SlotEntry[];
@@ -153,6 +161,23 @@ function buildExcuseListFromStatuses(
     .map((entry) => (entry.code || entry.name || entry.pin).trim())
     .filter(Boolean)
     .join("\n");
+}
+
+/** Merge leave-excuse prefill lines with statuses already marked ES/EG. */
+function mergeExcuseLists(...lists: string[]): string {
+  const seen = new Set<string>();
+  const lines: string[] = [];
+  for (const list of lists) {
+    for (const raw of String(list || "").split(/\r?\n/)) {
+      const line = raw.trim();
+      if (!line) continue;
+      const key = line.toLowerCase().replace(/[^a-z0-9]+/g, "");
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      lines.push(line);
+    }
+  }
+  return lines.join("\n");
 }
 
 // -------------------------------------------------------
@@ -367,8 +392,18 @@ export default function AttendanceDateDetailPage() {
       entry.status ??
       entry.defaultStatus ??
       "To be marked";
-    setEsList(buildExcuseListFromStatuses(data.gateEntries, statusOf, "ES"));
-    setEgList(buildExcuseListFromStatuses(data.gateEntries, statusOf, "EG"));
+    const fromStatusesEs = buildExcuseListFromStatuses(
+      data.gateEntries,
+      statusOf,
+      "ES"
+    );
+    const fromStatusesEg = buildExcuseListFromStatuses(
+      data.gateEntries,
+      statusOf,
+      "EG"
+    );
+    setEsList(mergeExcuseLists(data.leaveExcuses?.es || "", fromStatusesEs));
+    setEgList(mergeExcuseLists(data.leaveExcuses?.eg || "", fromStatusesEg));
     setExcuseError(null);
     setExcusesOpen(true);
   }
@@ -488,19 +523,19 @@ export default function AttendanceDateDetailPage() {
         actions={
           <>
             <HeaderMenu label="Navigate">
-              <Link href="/attendance" role="menuitem" className={headerMenuItemClass}>
+              <Link href="/attendance" className={headerMenuItemClass}>
                 All Dates
               </Link>
-              <Link href="/batches" role="menuitem" className={headerMenuItemClass}>
+              <Link href="/batches" className={headerMenuItemClass}>
                 Batches
               </Link>
-              <Link href="/gate-sheet" role="menuitem" className={headerMenuItemClass}>
+              <Link href="/gate-sheet" className={headerMenuItemClass}>
                 Gate Sheet
               </Link>
-              <Link href="/excuses" role="menuitem" className={headerMenuItemClass}>
+              <Link href="/excuses" className={headerMenuItemClass}>
                 Excuses
               </Link>
-              <Link href="/settings" role="menuitem" className={headerMenuItemClass}>
+              <Link href="/settings" className={headerMenuItemClass}>
                 <IconSettings className="w-3 h-3" />
                 Settings
               </Link>
@@ -510,7 +545,7 @@ export default function AttendanceDateDetailPage() {
                 setLoading(true);
                 fetchData();
               }}
-              className="px-3 py-1.5 rounded-md text-xs font-medium bg-slate-800 text-white hover:bg-slate-900 transition-colors"
+              className="min-h-11 inline-flex items-center px-3 py-2 rounded-md text-xs font-medium bg-slate-800 text-white hover:bg-slate-900 transition-colors"
             >
               <IconRefresh className="w-3 h-3 mr-1" />
               Refresh
@@ -532,7 +567,7 @@ export default function AttendanceDateDetailPage() {
 
         {/* Error */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          <div role="alert" className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
             <strong>Error:</strong> {error}
           </div>
         )}
@@ -540,10 +575,15 @@ export default function AttendanceDateDetailPage() {
         {!loading && !error && data && (
           <>
             {/* Tabs */}
-            <div className="flex gap-2 mb-6">
+            <div
+              className="flex gap-2 mb-6 overflow-x-auto pb-1"
+              aria-label="Attendance slots"
+            >
               <button
+                type="button"
+                aria-pressed={activeTab === "morning"}
                 onClick={() => setActiveTab("morning")}
-                className={`flex-1 px-4 sm:px-5 py-2.5 rounded-md text-sm font-semibold transition-colors ${
+                className={`shrink-0 min-h-11 px-4 sm:px-5 py-2.5 rounded-md text-sm font-semibold transition-colors ${
                   activeTab === "morning"
                     ? "bg-slate-800 text-white"
                     : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
@@ -552,8 +592,10 @@ export default function AttendanceDateDetailPage() {
                 Morning Check-in
               </button>
               <button
+                type="button"
+                aria-pressed={activeTab === "second"}
                 onClick={() => setActiveTab("second")}
-                className={`flex-1 px-4 sm:px-5 py-2.5 rounded-md text-sm font-semibold transition-colors ${
+                className={`shrink-0 min-h-11 px-4 sm:px-5 py-2.5 rounded-md text-sm font-semibold transition-colors ${
                   activeTab === "second"
                     ? "bg-slate-800 text-white"
                     : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
@@ -561,14 +603,16 @@ export default function AttendanceDateDetailPage() {
               >
                 11.15 Sign-in
                 {secondAttendance?.saved && (
-                  <span className="ml-2 px-1.5 py-0.5 rounded-full text-[10px] bg-emerald-600 text-white align-middle">
+                  <span className="ml-2 px-1.5 py-0.5 rounded-full text-xs bg-emerald-600 text-white align-middle">
                     Saved
                   </span>
                 )}
               </button>
               <button
+                type="button"
+                aria-pressed={activeTab === "third"}
                 onClick={() => setActiveTab("third")}
-                className={`flex-1 px-4 sm:px-5 py-2.5 rounded-md text-sm font-semibold transition-colors ${
+                className={`shrink-0 min-h-11 px-4 sm:px-5 py-2.5 rounded-md text-sm font-semibold transition-colors ${
                   activeTab === "third"
                     ? "bg-slate-800 text-white"
                     : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
@@ -576,14 +620,16 @@ export default function AttendanceDateDetailPage() {
               >
                 1.30 Sign-in
                 {thirdAttendance?.saved && (
-                  <span className="ml-2 px-1.5 py-0.5 rounded-full text-[10px] bg-emerald-600 text-white align-middle">
+                  <span className="ml-2 px-1.5 py-0.5 rounded-full text-xs bg-emerald-600 text-white align-middle">
                     Saved
                   </span>
                 )}
               </button>
               <button
+                type="button"
+                aria-pressed={activeTab === "gate"}
                 onClick={() => setActiveTab("gate")}
-                className={`flex-1 px-4 sm:px-5 py-2.5 rounded-md text-sm font-semibold transition-colors ${
+                className={`shrink-0 min-h-11 px-4 sm:px-5 py-2.5 rounded-md text-sm font-semibold transition-colors ${
                   activeTab === "gate"
                     ? "bg-slate-800 text-white"
                     : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
@@ -591,7 +637,7 @@ export default function AttendanceDateDetailPage() {
               >
                 Gate Attendance
                 {gateSaved && (
-                  <span className="ml-2 px-1.5 py-0.5 rounded-full text-[10px] bg-emerald-600 text-white align-middle">
+                  <span className="ml-2 px-1.5 py-0.5 rounded-full text-xs bg-emerald-600 text-white align-middle">
                     Saved
                   </span>
                 )}
@@ -608,7 +654,7 @@ export default function AttendanceDateDetailPage() {
                       Morning sign-ins
                     </p>
                     <p className="text-2xl font-semibold text-slate-900">{morning.length}</p>
-                    <p className="text-xs text-slate-400 mt-1">
+                    <p className="text-xs text-slate-600 mt-1">
                       {(data.batches || []).length > 0
                         ? `Batch times; others by 7:00 AM`
                         : "Late after 7:00 AM (no batches)"}
@@ -640,7 +686,7 @@ export default function AttendanceDateDetailPage() {
                   <button
                     type="button"
                     onClick={() => setShowLatecomers((v) => !v)}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${
+                    className={`min-h-11 inline-flex items-center px-3 py-2 rounded-md text-xs font-medium border transition-colors ${
                       showLatecomers
                         ? "bg-red-50 text-red-700 border-red-200"
                         : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
@@ -791,7 +837,7 @@ export default function AttendanceDateDetailPage() {
                 )}
 
                 {saveError && (
-                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
+                  <div role="alert" className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
                     {saveError}
                   </div>
                 )}
@@ -833,7 +879,7 @@ export default function AttendanceDateDetailPage() {
                         <button
                           onClick={handleSaveGate}
                           disabled={saving || data.gateEntries.length === 0}
-                          className="px-5 py-2.5 rounded-md bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          className="px-5 py-2.5 rounded-md min-h-11 bg-brand-700 text-white text-sm font-semibold hover:bg-brand-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                           {saving ? (
                             <span className="flex items-center gap-2">
@@ -870,23 +916,24 @@ export default function AttendanceDateDetailPage() {
                           <button
                             key={tab.id}
                             type="button"
+                            aria-pressed={active}
                             onClick={() => setGateDutyTab(tab.id)}
-                            className={`shrink-0 px-3 sm:px-4 py-2 text-sm font-medium rounded-t-md border-b-2 transition-colors ${
+                            className={`shrink-0 min-h-11 px-3 sm:px-4 py-2 text-sm font-medium rounded-t-md border-b-2 transition-colors ${
                               active
                                 ? tab.id === "traitors"
                                   ? "border-rose-600 text-rose-700 bg-rose-50/60"
-                                  : "border-brand-600 text-brand-700 bg-brand-50/60"
+                                  : "border-brand-700 text-brand-700 bg-brand-50/60"
                                 : "border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                             }`}
                           >
                             {tab.label}
                             <span
-                              className={`ml-1.5 text-[11px] ${
+                              className={`ml-1.5 text-xs ${
                                 active
                                   ? tab.id === "traitors"
                                     ? "text-rose-600"
-                                    : "text-brand-600"
-                                  : "text-slate-400"
+                                    : "text-brand-800"
+                                  : "text-slate-600"
                               }`}
                             >
                               {count}
@@ -896,19 +943,19 @@ export default function AttendanceDateDetailPage() {
                       })}
                     </div>
                     {gateDutyTab !== "all" && gateDutyTab !== "traitors" && (
-                      <p className="text-xs text-slate-400 pb-3 pt-1">
+                      <p className="text-xs text-slate-600 pb-3 pt-1">
                         Prefects assigned to this gate today who have already
                         signed in. Status changes sync to the All tab.
                       </p>
                     )}
                     {gateDutyTab === "all" && (
-                      <p className="text-xs text-slate-400 pb-3 pt-1">
+                      <p className="text-xs text-slate-600 pb-3 pt-1">
                         All house prefects. Statuses stay in sync with the gate
                         tabs.
                       </p>
                     )}
                     {gateDutyTab === "traitors" && (
-                      <p className="text-xs text-slate-400 pb-3 pt-1">
+                      <p className="text-xs text-slate-600 pb-3 pt-1">
                         Prefects marked Traitor for this day (typically after
                         excuses are applied).
                       </p>
@@ -916,7 +963,7 @@ export default function AttendanceDateDetailPage() {
                   </div>
 
                   {visibleGateEntries.length === 0 ? (
-                    <div className="p-10 text-center text-sm text-slate-400">
+                    <div className="p-10 text-center text-sm text-slate-600">
                       {data.gateEntries.length === 0
                         ? "No prefects registered yet. Add house prefects first."
                         : gateDutyEmptyMessage}
@@ -952,12 +999,13 @@ export default function AttendanceDateDetailPage() {
       >
         <div className="flex flex-col gap-4">
           <p className="text-sm text-slate-500">
-            Enter one prefect code, full name, surname, or PIN per line
-            (commas also work). Prefects in these lists become ES or EG
-            (including those currently Present). Late may be overwritten by EG
-            only. When every line matches, remaining unmarked prefects who
-            did not sign in for the morning become Traitor, and those with no
-            gate duty today become Present.
+            Lists are prefilled from logged leave excuses for this date and
+            anyone already marked ES/EG. Enter one prefect code, full name,
+            surname, or PIN per line (commas also work). Prefects in these
+            lists become ES or EG (including those currently Present). Late may
+            be overwritten by EG only. When every line matches, remaining
+            unmarked prefects who did not sign in for the morning become
+            Traitor, and those with no gate duty today become Present.
           </p>
 
           <div className="flex flex-col gap-1.5">
@@ -971,7 +1019,7 @@ export default function AttendanceDateDetailPage() {
               value={esList}
               onChange={(e) => setEsList(e.target.value)}
               placeholder={"One code, name, or PIN per line"}
-              className="w-full px-3 py-2 rounded-md border border-slate-300 text-sm font-mono text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/40 resize-none overflow-y-auto"
+              className="w-full px-3 py-2 rounded-md border border-slate-300 text-sm font-mono text-slate-800 placeholder:text-slate-600 resize-none overflow-y-auto"
             />
           </div>
 
@@ -986,12 +1034,12 @@ export default function AttendanceDateDetailPage() {
               value={egList}
               onChange={(e) => setEgList(e.target.value)}
               placeholder={"One code, name, or PIN per line"}
-              className="w-full px-3 py-2 rounded-md border border-slate-300 text-sm font-mono text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/40 resize-none overflow-y-auto"
+              className="w-full px-3 py-2 rounded-md border border-slate-300 text-sm font-mono text-slate-800 placeholder:text-slate-600 resize-none overflow-y-auto"
             />
           </div>
 
           {excuseError && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
+            <div role="alert" className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
               {excuseError}
             </div>
           )}
@@ -1009,7 +1057,7 @@ export default function AttendanceDateDetailPage() {
               type="button"
               onClick={handleExcuse}
               disabled={excusing || saving}
-              className="px-4 py-2 rounded-md text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 rounded-md text-sm font-semibold text-white min-h-11 bg-brand-700 hover:bg-brand-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {excusing || saving ? "Applying..." : "Excuse"}
             </button>
@@ -1088,7 +1136,7 @@ function SlotAttendancePanel({
       )}
 
       {saveError && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
+        <div role="alert" className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
           {saveError}
         </div>
       )}
@@ -1102,7 +1150,7 @@ function SlotAttendancePanel({
         <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm">
           <p className="text-xs text-slate-500 mb-1">{label} sign-ins</p>
           <p className="text-2xl font-semibold text-slate-900">{signedInCount}</p>
-          <p className="text-xs text-slate-400 mt-1">{cutoffCopy}</p>
+          <p className="text-xs text-slate-600 mt-1">{cutoffCopy}</p>
         </div>
         <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm">
           <p className="text-xs text-slate-500 mb-1">Present</p>
@@ -1120,14 +1168,14 @@ function SlotAttendancePanel({
             <h3 className="font-semibold text-slate-800">
               {label} Attendance ({block.entries.length} prefects)
             </h3>
-            <p className="text-xs text-slate-400 mt-1">{cutoffCopy}</p>
+            <p className="text-xs text-slate-600 mt-1">{cutoffCopy}</p>
           </div>
           {canEdit && (
             <button
               type="button"
               onClick={onSave}
               disabled={saving || block.entries.length === 0}
-              className="px-5 py-2.5 rounded-md bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-5 py-2.5 rounded-md min-h-11 bg-brand-700 text-white text-sm font-semibold hover:bg-brand-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {saving ? (
                 <span className="flex items-center gap-2">
@@ -1144,7 +1192,7 @@ function SlotAttendancePanel({
         </div>
 
         {block.entries.length === 0 ? (
-          <div className="p-10 text-center text-sm text-slate-400">
+          <div className="p-10 text-center text-sm text-slate-600">
             No morning check-ins on this date. Prefects who signed in for
             morning check-in appear here.
           </div>
@@ -1175,7 +1223,7 @@ function SlotAttendancePanel({
                       key={entry.prefectId}
                       className="hover:bg-slate-50/50 transition-colors"
                     >
-                      <td className="px-6 py-3 text-sm text-slate-400 font-mono hidden sm:table-cell">
+                      <td className="px-6 py-3 text-sm text-slate-600 font-mono hidden sm:table-cell">
                         {idx + 1}
                       </td>
                       <td className="px-6 py-3">
@@ -1187,7 +1235,7 @@ function SlotAttendancePanel({
                             <p className="text-sm font-medium text-slate-800">
                               {entry.name}
                             </p>
-                            <p className="text-xs text-slate-400">
+                            <p className="text-xs text-slate-600">
                               {entry.class && (
                                 <span className="mr-2 font-medium text-slate-500">
                                   {entry.class}
@@ -1209,7 +1257,7 @@ function SlotAttendancePanel({
                             {toDisplayTime(entry.time)}
                           </span>
                         ) : (
-                          <span className="text-sm text-slate-300">—</span>
+                          <span className="text-sm text-slate-500">—</span>
                         )}
                       </td>
                       <td className="px-6 py-3">
@@ -1219,7 +1267,7 @@ function SlotAttendancePanel({
                             onChange={(e) =>
                               onStatusChange(entry.prefectId, e.target.value)
                             }
-                            className={`px-3 py-2 rounded-md border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-500/40 transition-colors ${GATE_STATUS_STYLES[value] || "bg-white border-slate-300 text-slate-700"}`}
+                            className={`px-3 py-2 rounded-md border text-sm font-medium transition-colors ${GATE_STATUS_STYLES[value] || "bg-white border-slate-300 text-slate-700"}`}
                           >
                             {SLOT_STATUSES.map((status) => (
                               <option key={status} value={status}>
@@ -1279,7 +1327,7 @@ function GatePrefectTable({
             const value = gateValue(entry);
             return (
               <tr key={entry.prefectId} className="hover:bg-slate-50/50 transition-colors">
-                <td className="px-6 py-3 text-sm text-slate-400 font-mono hidden sm:table-cell">{idx + 1}</td>
+                <td className="px-6 py-3 text-sm text-slate-600 font-mono hidden sm:table-cell">{idx + 1}</td>
                 <td className="px-6 py-3">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-600 text-xs font-semibold">
@@ -1289,7 +1337,7 @@ function GatePrefectTable({
                       <p className="text-sm font-medium text-slate-800">
                         {entry.name}
                       </p>
-                      <p className="text-xs text-slate-400">
+                      <p className="text-xs text-slate-600">
                         {entry.class && (
                           <span className="mr-2 font-medium text-slate-500">{entry.class}</span>
                         )}
@@ -1311,7 +1359,7 @@ function GatePrefectTable({
                       onChange={(e) =>
                         onStatusChange(entry.prefectId, e.target.value)
                       }
-                      className={`px-3 py-2 rounded-md border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-500/40 transition-colors ${GATE_STATUS_STYLES[value] || "bg-white border-slate-300 text-slate-700"}`}
+                      className={`px-3 py-2 rounded-md border text-sm font-medium transition-colors ${GATE_STATUS_STYLES[value] || "bg-white border-slate-300 text-slate-700"}`}
                     >
                       {GATE_STATUSES.map((status) => (
                         <option key={status} value={status}>
@@ -1326,7 +1374,7 @@ function GatePrefectTable({
                       {value}
                     </span>
                   ) : (
-                    <span className="text-sm text-slate-300">—</span>
+                    <span className="text-sm text-slate-500">—</span>
                   )}
                 </td>
               </tr>
@@ -1358,7 +1406,7 @@ function SignInTable({
       <div className="px-6 py-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2">
         <h3 className="font-semibold text-slate-800">{title}</h3>
         {subtitle && (
-          <span className="text-xs text-slate-400">{subtitle}</span>
+          <span className="text-xs text-slate-600">{subtitle}</span>
         )}
       </div>
       <div className="overflow-x-auto">
@@ -1385,7 +1433,7 @@ function SignInTable({
                       : "hover:bg-slate-50/50"
                 }`}
               >
-                <td className="px-6 py-3.5 text-sm text-slate-400 font-mono hidden sm:table-cell">{idx + 1}</td>
+                <td className="px-6 py-3.5 text-sm text-slate-600 font-mono hidden sm:table-cell">{idx + 1}</td>
                 <td className="px-6 py-3.5">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-600 text-xs font-semibold">
@@ -1393,7 +1441,7 @@ function SignInTable({
                     </div>
                     <div>
                       <p className="text-sm font-medium text-slate-800">{entry.name}</p>
-                      <div className="flex items-center gap-2 text-xs text-slate-400">
+                      <div className="flex items-center gap-2 text-xs text-slate-600">
                         {entry.class && (
                           <span className="font-medium text-slate-500">{entry.class}</span>
                         )}
@@ -1414,7 +1462,7 @@ function SignInTable({
                     {toDisplayTime(entry.time)}
                   </span>
                   {entry.suspended && entry.deadline && (
-                    <p className="text-[11px] text-violet-600 mt-0.5">
+                    <p className="text-xs text-violet-600 mt-0.5">
                       Suspended · due by {toTimeNoSeconds(entry.deadline)}
                     </p>
                   )}
