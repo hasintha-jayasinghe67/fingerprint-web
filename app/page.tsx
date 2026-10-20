@@ -154,6 +154,7 @@ export default function AttendancePage() {
   const { user } = useAuth();
   const canWrite = isAdminOrAbove(user);
   const [events, setEvents] = useState<AttendanceEvent[]>([]);
+  const [totalPrefects, setTotalPrefects] = useState<number>(0);
   const [devices, setDevices] = useState<DeviceInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -183,9 +184,10 @@ export default function AttendancePage() {
       setLoading(true);
       setError(null);
 
-      const [attRes, devRes] = await Promise.all([
+      const [attRes, devRes, prefRes] = await Promise.all([
         fetch(apiUrl(`/api/attendance?date=${todayISO}`)),
         fetch(apiUrl("/api/devices")),
+        fetch(apiUrl("/api/prefects")),
       ]);
 
       if (!attRes.ok) throw new Error("Failed to fetch attendance");
@@ -193,6 +195,16 @@ export default function AttendancePage() {
 
       const attData = await attRes.json();
       const devData = await devRes.json();
+      if (prefRes.ok) {
+        const prefData = await prefRes.json();
+        setTotalPrefects(
+          typeof prefData.count === "number"
+            ? prefData.count
+            : Array.isArray(prefData.prefects)
+              ? prefData.prefects.length
+              : 0
+        );
+      }
 
       // Sort by timestamp ascending
       const sorted = attData.events.sort(
@@ -446,8 +458,9 @@ export default function AttendancePage() {
         </div>
 
         {/* Stats */}
-        <div className="mb-8 max-w-xs">
+        <div className="mb-8 grid grid-cols-1 sm:grid-cols-[minmax(0,20rem)_minmax(0,24rem)] gap-4">
           <StatCard label="Number of prefects" value={prefectCount} />
+          <PresenceDonut present={prefectCount} total={totalPrefects} />
         </div>
 
         {/* Error */}
@@ -895,6 +908,79 @@ function StatCard({ label, value }: { label: string; value: number }) {
     <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm">
       <span className="text-xs text-slate-500">{label}</span>
       <p className="text-2xl font-semibold text-slate-900 mt-1">{value}</p>
+    </div>
+  );
+}
+
+// -------------------------------------------------------
+// Presence Donut (present today vs. total prefects)
+// -------------------------------------------------------
+
+function PresenceDonut({ present, total }: { present: number; total: number }) {
+  const size = 96;
+  const stroke = 12;
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const safeTotal = Math.max(total, 0);
+  const safePresent = Math.min(Math.max(present, 0), safeTotal || present);
+  const ratio = safeTotal > 0 ? safePresent / safeTotal : 0;
+  const dash = circumference * ratio;
+  const percent = safeTotal > 0 ? Math.round(ratio * 100) : 0;
+  const absent = Math.max(safeTotal - safePresent, 0);
+
+  return (
+    <div
+      className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm flex items-center gap-4"
+      role="img"
+      aria-label={`${safePresent} of ${safeTotal} prefects present today (${percent}%)`}
+    >
+      <svg
+        width={size}
+        height={size}
+        viewBox={`0 0 ${size} ${size}`}
+        className="shrink-0 -rotate-90"
+        aria-hidden="true"
+      >
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="#e2e8f0"
+          strokeWidth={stroke}
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="#8f5413"
+          strokeWidth={stroke}
+          strokeLinecap={dash > 0 && dash < circumference ? "round" : "butt"}
+          strokeDasharray={`${dash} ${circumference - dash}`}
+          className="transition-[stroke-dasharray] duration-500 ease-out"
+        />
+      </svg>
+      <div className="min-w-0">
+        <span className="text-xs text-slate-500">Present today</span>
+        <p className="text-2xl font-semibold text-slate-900 mt-1 leading-none">
+          {percent}%
+        </p>
+        <p className="text-sm text-slate-600 mt-1.5">
+          <span className="font-medium text-slate-900">{safePresent}</span> of{" "}
+          <span className="font-medium text-slate-900">{safeTotal}</span> prefects
+        </p>
+        <div className="flex items-center gap-3 mt-2 text-xs text-slate-500">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-brand-700" />
+            Present {safePresent}
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-slate-200" />
+            Not yet {absent}
+          </span>
+        </div>
+      </div>
     </div>
   );
 }
