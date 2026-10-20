@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { apiUrl, readApiJson } from "@/lib/api";
+import { matchesSearch } from "@/lib/search";
 import { useAuth, isAdminOrAbove } from "@/lib/AuthContext";
 import SiteHeader from "@/components/site-header";
 import HeaderMenu, { headerMenuItemClass } from "@/components/HeaderMenu";
@@ -21,6 +22,7 @@ export default function GeneralAttendanceListPage() {
   const canWrite = isAdminOrAbove(user);
 
   const [records, setRecords] = useState<GeneralAttendanceSummary[]>([]);
+  const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -48,6 +50,18 @@ export default function GeneralAttendanceListPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  const filteredRecords = useMemo(() => {
+    return records.filter((record) =>
+      matchesSearch(
+        query,
+        record.name,
+        record.date,
+        formatDateDisplay(record.date),
+        String(record.prefectCount)
+      )
+    );
+  }, [records, query]);
 
   return (
     <div className="min-h-screen">
@@ -143,14 +157,34 @@ export default function GeneralAttendanceListPage() {
 
         {!loading && records.length > 0 && (
           <div>
-            <div className="mb-6">
+            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="text-lg font-semibold tracking-tight text-slate-800">
-                {records.length} Record{records.length !== 1 ? "s" : ""}
+                {query.trim()
+                  ? `${filteredRecords.length} of ${records.length} record${records.length !== 1 ? "s" : ""}`
+                  : `${records.length} Record${records.length !== 1 ? "s" : ""}`}
               </h2>
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search by name or date…"
+                aria-label="Search general attendance records"
+                className="w-full sm:max-w-xs px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 text-sm"
+              />
             </div>
 
+            {filteredRecords.length === 0 ? (
+              <div className="bg-white rounded-lg border border-slate-200 p-10 text-center">
+                <h3 className="text-lg font-semibold text-slate-700">
+                  No matching records
+                </h3>
+                <p className="text-sm text-slate-500 mt-1">
+                  No general attendance records match “{query.trim()}”.
+                </p>
+              </div>
+            ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {records.map((record) => (
+              {filteredRecords.map((record) => (
                 <Link
                   key={record.id}
                   href={`/attendance/general/${record.id}`}
@@ -180,6 +214,7 @@ export default function GeneralAttendanceListPage() {
                 </Link>
               ))}
             </div>
+            )}
           </div>
         )}
       </main>

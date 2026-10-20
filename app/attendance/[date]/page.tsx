@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { apiUrl } from "@/lib/api";
+import { matchesSearch } from "@/lib/search";
 import { useAuth, isAdminOrAbove, isSuperuser } from "@/lib/AuthContext";
 import SiteHeader from "@/components/site-header";
 import HeaderMenu, { headerMenuItemClass } from "@/components/HeaderMenu";
@@ -215,6 +216,7 @@ export default function AttendanceDateDetailPage() {
   const [excusing, setExcusing] = useState(false);
   const [excuseError, setExcuseError] = useState<string | null>(null);
   const [showLatecomers, setShowLatecomers] = useState(false);
+  const [query, setQuery] = useState("");
   const esTextareaRef = useRef<HTMLTextAreaElement>(null);
   const egTextareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -481,7 +483,18 @@ export default function AttendanceDateDetailPage() {
   const third = data?.slots.third || [];
   const latecomers = morning.filter((m) => m.late);
   const lateCount = latecomers.length;
-  const displayedMorning = showLatecomers ? latecomers : morning;
+  const displayedMorning = useMemo(() => {
+    const base = showLatecomers ? latecomers : morning;
+    return base.filter((entry) =>
+      matchesSearch(
+        query,
+        entry.name,
+        entry.class,
+        entry.code,
+        entry.pin
+      )
+    );
+  }, [showLatecomers, latecomers, morning, query]);
   const secondAttendance = data?.slotAttendance?.second;
   const thirdAttendance = data?.slotAttendance?.third;
   const gateSaved = !!data?.gateSaved;
@@ -499,9 +512,22 @@ export default function AttendanceDateDetailPage() {
   }
 
   const visibleGateEntries = (data?.gateEntries || []).filter((entry) => {
-    if (gateDutyTab === "all") return true;
-    if (gateDutyTab === "traitors") return gateValue(entry) === "Traitor";
-    return entry.gateAssignment === gateDutyTab && entry.signedIn;
+    if (gateDutyTab === "all") {
+      // fall through to search
+    } else if (gateDutyTab === "traitors") {
+      if (gateValue(entry) !== "Traitor") return false;
+    } else if (!(entry.gateAssignment === gateDutyTab && entry.signedIn)) {
+      return false;
+    }
+    return matchesSearch(
+      query,
+      entry.name,
+      entry.class,
+      entry.code,
+      entry.pin,
+      entry.gateAssignment,
+      gateValue(entry)
+    );
   });
 
   const gateDutyEmptyMessage =
@@ -644,6 +670,17 @@ export default function AttendanceDateDetailPage() {
               </button>
             </div>
 
+            <div className="mb-6">
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search by name, class, code or PIN…"
+                aria-label="Search prefects in this day's attendance"
+                className="w-full sm:max-w-sm px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 text-sm"
+              />
+            </div>
+
             {/* ================= Morning Check-in tab ================= */}
             {activeTab === "morning" && (
               <div>
@@ -709,6 +746,15 @@ export default function AttendanceDateDetailPage() {
                       AM appear here.
                     </p>
                   </div>
+                ) : displayedMorning.length === 0 && query.trim() ? (
+                  <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-10 text-center">
+                    <h3 className="text-lg font-semibold text-slate-700">
+                      No matching prefects
+                    </h3>
+                    <p className="text-sm text-slate-500 mt-1">
+                      No morning sign-ins match “{query.trim()}”.
+                    </p>
+                  </div>
                 ) : showLatecomers && displayedMorning.length === 0 ? (
                   <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-10 text-center">
                     <h3 className="text-lg font-semibold text-slate-700">
@@ -749,6 +795,7 @@ export default function AttendanceDateDetailPage() {
                   cutoffCopy="After 10:50 AM"
                   block={secondAttendance}
                   signedInCount={second.length}
+                  query={query}
                   slotValue={(entry) => slotValue("second", entry)}
                   canEdit={canEditSlot("second")}
                   canWrite={canWrite}
@@ -782,6 +829,7 @@ export default function AttendanceDateDetailPage() {
                   cutoffCopy="After 1:00 PM"
                   block={thirdAttendance}
                   signedInCount={third.length}
+                  query={query}
                   slotValue={(entry) => slotValue("third", entry)}
                   canEdit={canEditSlot("third")}
                   canWrite={canWrite}
@@ -966,7 +1014,9 @@ export default function AttendanceDateDetailPage() {
                     <div className="p-10 text-center text-sm text-slate-600">
                       {data.gateEntries.length === 0
                         ? "No prefects registered yet. Add house prefects first."
-                        : gateDutyEmptyMessage}
+                        : query.trim()
+                          ? `No prefects match “${query.trim()}”.`
+                          : gateDutyEmptyMessage}
                     </div>
                   ) : (
                     <GatePrefectTable
@@ -1077,6 +1127,7 @@ function SlotAttendancePanel({
   cutoffCopy,
   block,
   signedInCount,
+  query,
   slotValue,
   canEdit,
   canWrite,
@@ -1091,6 +1142,7 @@ function SlotAttendancePanel({
   cutoffCopy: string;
   block: SlotAttendanceBlock;
   signedInCount: number;
+  query: string;
   slotValue: (entry: SlotAttendanceEntry) => string;
   canEdit: boolean;
   canWrite: boolean;
@@ -1107,6 +1159,9 @@ function SlotAttendancePanel({
   const absentCount = block.entries.filter(
     (e) => slotValue(e) === "Absent"
   ).length;
+  const visibleEntries = block.entries.filter((entry) =>
+    matchesSearch(query, entry.name, entry.class, entry.code, entry.pin)
+  );
 
   return (
     <div>
@@ -1196,6 +1251,10 @@ function SlotAttendancePanel({
             No morning check-ins on this date. Prefects who signed in for
             morning check-in appear here.
           </div>
+        ) : visibleEntries.length === 0 ? (
+          <div className="p-10 text-center text-sm text-slate-600">
+            No prefects match “{query.trim()}”.
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -1216,7 +1275,7 @@ function SlotAttendancePanel({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {block.entries.map((entry, idx) => {
+                {visibleEntries.map((entry, idx) => {
                   const value = slotValue(entry);
                   return (
                     <tr

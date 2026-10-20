@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { apiUrl } from "@/lib/api";
+import { matchesSearch } from "@/lib/search";
 import SiteHeader from "@/components/site-header";
 import HeaderMenu, { headerMenuItemClass } from "@/components/HeaderMenu";
 import { IconSettings, IconRefresh, IconArrowRight, IconCheck } from "@/components/icons";
@@ -65,6 +66,7 @@ function getRelativeLabel(dateStr: string): string {
 
 export default function AttendanceDatesPage() {
   const [dates, setDates] = useState<AttendanceDate[]>([]);
+  const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -88,6 +90,19 @@ export default function AttendanceDatesPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  const filteredDates = useMemo(() => {
+    return dates.filter((d) =>
+      matchesSearch(
+        query,
+        d.date,
+        formatDateDisplay(d.date),
+        getRelativeLabel(d.date),
+        String(d.prefectCount),
+        String(d.totalRecords)
+      )
+    );
+  }, [dates, query]);
 
   return (
     <div className="min-h-screen">
@@ -173,15 +188,34 @@ export default function AttendanceDatesPage() {
         {/* Date Cards */}
         {!loading && dates.length > 0 && (
           <div>
-            <div className="mb-6 flex items-center justify-between">
+            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="text-lg font-semibold tracking-tight text-slate-800">
-                {dates.length} Day{dates.length !== 1 ? "s" : ""} with
-                Attendance
+                {query.trim()
+                  ? `${filteredDates.length} of ${dates.length} day${dates.length !== 1 ? "s" : ""}`
+                  : `${dates.length} Day${dates.length !== 1 ? "s" : ""} with Attendance`}
               </h2>
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search by date…"
+                aria-label="Search attendance dates"
+                className="w-full sm:max-w-xs px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 text-sm"
+              />
             </div>
 
+            {filteredDates.length === 0 ? (
+              <div className="bg-white rounded-lg border border-slate-200 p-10 text-center">
+                <h3 className="text-lg font-semibold text-slate-700">
+                  No matching days
+                </h3>
+                <p className="text-sm text-slate-500 mt-1">
+                  No fingerprint attendance days match “{query.trim()}”.
+                </p>
+              </div>
+            ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {dates.map((d) => {
+              {filteredDates.map((d) => {
                 const relativeLabel = getRelativeLabel(d.date);
                 return (
                   <Link
@@ -234,6 +268,7 @@ export default function AttendanceDatesPage() {
                 );
               })}
             </div>
+            )}
           </div>
         )}
       </main>

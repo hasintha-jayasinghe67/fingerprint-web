@@ -1,6 +1,8 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import Link from "next/link";
+import { matchesSearch } from "@/lib/search";
 import {
   DEFAULT_GATE_STATUS,
   GATE_STATUSES,
@@ -44,6 +46,22 @@ export default function GeneralAttendanceForm({
   onStatusChange: (prefectId: number, status: string) => void;
   onSubmit: (e: React.FormEvent) => void;
 }) {
+  const [query, setQuery] = useState("");
+  const visibleEntries = useMemo(
+    () =>
+      entries.filter((entry) =>
+        matchesSearch(
+          query,
+          entry.name,
+          entry.class,
+          entry.code,
+          entry.pin,
+          entry.status
+        )
+      ),
+    [entries, query]
+  );
+
   return (
     <form onSubmit={onSubmit} className="space-y-6">
       {error && (
@@ -92,18 +110,34 @@ export default function GeneralAttendanceForm({
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100">
-          <h3 className="font-semibold text-slate-800">
-            House prefects ({entries.length})
-          </h3>
-          <p className="text-sm text-slate-500 mt-1">
-            Mark each prefect with the same statuses used for gate attendance.
-          </p>
+        <div className="px-6 py-4 border-b border-slate-100 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h3 className="font-semibold text-slate-800">
+              House prefects ({entries.length})
+            </h3>
+            <p className="text-sm text-slate-500 mt-1">
+              Mark each prefect with the same statuses used for gate attendance.
+            </p>
+          </div>
+          {entries.length > 0 && (
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search by name, class, code or PIN…"
+              aria-label="Search prefects in this attendance record"
+              className="w-full sm:max-w-xs px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 text-sm"
+            />
+          )}
         </div>
 
         {entries.length === 0 ? (
           <div className="px-6 py-10 text-sm text-slate-500 text-center">
             No prefects registered yet. Add house prefects first.
+          </div>
+        ) : visibleEntries.length === 0 ? (
+          <div className="px-6 py-10 text-sm text-slate-500 text-center">
+            No prefects match “{query.trim()}”.
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -122,7 +156,7 @@ export default function GeneralAttendanceForm({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {entries.map((entry, idx) => {
+                {visibleEntries.map((entry, idx) => {
                   const value = entry.status || DEFAULT_GATE_STATUS;
                   return (
                     <tr

@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { apiUrl } from "@/lib/api";
+import { matchesSearch } from "@/lib/search";
 import { useAuth, isAdminOrAbove } from "@/lib/AuthContext";
 import SiteHeader from "@/components/site-header";
 import Modal from "@/components/Modal";
@@ -174,6 +175,7 @@ export default function AttendancePage() {
     msg: string;
   } | null>(null);
   const [showLatecomers, setShowLatecomers] = useState(false);
+  const [query, setQuery] = useState("");
   const [excusingPin, setExcusingPin] = useState<string | null>(null);
   const [excuseError, setExcuseError] = useState<string | null>(null);
 
@@ -323,10 +325,26 @@ export default function AttendancePage() {
     );
   }
 
-  const displayedEvents = showLatecomers
-    ? events.filter(eventIsLate)
-    : events;
   const latecomerCount = events.filter(eventIsLate).length;
+  const displayedEvents = useMemo(() => {
+    const base = showLatecomers
+      ? events.filter(
+          (event) =>
+            event.late ??
+            isMorningLate(event.timestamp.split(" ")[1] || "")
+        )
+      : events;
+    return base.filter((event) =>
+      matchesSearch(
+        query,
+        event.name,
+        event.pin,
+        event.status,
+        event.verifyMethod,
+        event.deviceSN
+      )
+    );
+  }, [events, showLatecomers, query]);
 
   return (
     <div className="min-h-screen">
@@ -504,13 +522,21 @@ export default function AttendancePage() {
         {/* Attendance Table */}
         {events.length > 0 && (
           <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2">
+            <div className="px-6 py-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
               <h3 className="font-semibold text-slate-800">
                 {showLatecomers
                   ? `Latecomers (${displayedEvents.length})`
                   : `Attendance log (${events.length} records)`}
               </h3>
               <div className="flex flex-wrap items-center gap-2">
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search by name or PIN…"
+                  aria-label="Search today's attendance log"
+                  className="w-full sm:w-56 px-3.5 py-2 rounded-md border border-slate-300 bg-white text-slate-900 text-sm"
+                />
                 <button
                   type="button"
                   onClick={() => setShowLatecomers((v) => !v)}
@@ -549,10 +575,18 @@ export default function AttendancePage() {
             {displayedEvents.length === 0 ? (
               <div className="px-6 py-12 text-center">
                 <p className="text-sm font-medium text-slate-700">
-                  No latecomers today
+                  {query.trim()
+                    ? "No matching records"
+                    : showLatecomers
+                      ? "No latecomers today"
+                      : "No attendance records today"}
                 </p>
                 <p className="text-xs text-slate-500 mt-1">
-                  Every morning sign-in so far was on time.
+                  {query.trim()
+                    ? `Nothing in today's log matches “${query.trim()}”.`
+                    : showLatecomers
+                      ? "Every morning sign-in so far was on time."
+                      : "Waiting for fingerprint scans."}
                 </p>
               </div>
             ) : (
