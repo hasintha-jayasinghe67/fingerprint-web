@@ -209,6 +209,12 @@ export default function PrefectsPage() {
         actions={
           <>
             <Link
+              href="/prefects/codes"
+              className="px-4 py-2 rounded-md bg-white text-slate-700 border border-slate-300 text-sm font-semibold hover:bg-slate-50 transition-colors"
+            >
+              Bulk add codes
+            </Link>
+            <Link
               href="/prefects/suspend"
               className="px-4 py-2 rounded-md bg-white text-slate-700 border border-slate-300 text-sm font-semibold hover:bg-slate-50 transition-colors"
             >
