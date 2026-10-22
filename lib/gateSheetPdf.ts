@@ -4,10 +4,12 @@
  * Full sheet: NAME | CODE | Mon–Fri, plus rules / legend / signature.
  * Off-probation: NAME | Mon–Fri only (no CODE column, no extras).
  *
+ * Large rosters paginate across as many A4 pages as needed. Table headers
+ * repeat on each page; full-sheet boilerplate always appears in full
+ * (under the last table chunk when it fits, otherwise on a fresh page).
+ *
  * Column widths grow with content (especially long names) so cells stay
- * single-line and the grid stays aligned. Day columns compress first;
- * day headers shorten when space is tight; name font shrinks only as a
- * last resort.
+ * single-line and the grid stays aligned.
  */
 
 import { jsPDF } from "jspdf";
@@ -54,8 +56,12 @@ const FONT = "helvetica";
 const FONT_SIZE = 11;
 const CELL_PAD_X = 4;
 const MIN_CODE_W = 40;
-/** Narrowest a day column may become (fits "PBG" + padding). */
 const MIN_DAY_W = 32;
+const PAGE_BOTTOM_MARGIN = 54;
+/** Gap between the table and the rules block. */
+const EXTRAS_GAP = 16;
+/** Space reserved under the rules for the legend + signature. */
+const LEGEND_BLOCK_H = 104;
 
 function formatCodeCell(code: string | null): string {
   return (code || "").trim();
@@ -93,18 +99,99 @@ function measure(
 }
 
 interface ColumnLayout {
-  /** Absolute x edges: [left, afterName, (afterCode?), ...day edges, right] */
   cols: number[];
   dayLabels: string[];
-  /** When false, the CODE column is omitted (off-probation sheets). */
   includeCode: boolean;
 }
 
+interface RuleBlock {
+  prefix: string;
+  lines: string[];
+}
+
+function buildRuleBlocks(doc: InstanceType<typeof jsPDF>): {
+  blocks: RuleBlock[];
+  ruleLeft: number;
+  ruleIndent: number;
+  lineH: number;
+  rulesHeight: number;
+} {
+  const pageW = doc.internal.pageSize.getWidth();
+  const ruleLeft = 90;
+  const ruleIndent = 108;
+  const ruleMaxW = pageW - ruleIndent - 54;
+  const lineH = 15.5;
+  doc.setFont(FONT, "bold");
+  doc.setFontSize(12);
+
+  const blocks: RuleBlock[] = RULES.map((rule, i) => ({
+    prefix: `${i + 1})  `,
+    lines: doc.splitTextToSize(rule, ruleMaxW) as string[],
+  }));
+  const rulesHeight = blocks.reduce(
+    (sum, b) => sum + b.lines.length * lineH + 1.5,
+    0
+  );
+  return { blocks, ruleLeft, ruleIndent, lineH, rulesHeight };
+}
+
+/** Total height needed below the table for rules + legend/signature. */
+function extrasHeight(doc: InstanceType<typeof jsPDF>): number {
+  const { rulesHeight } = buildRuleBlocks(doc);
+  // gap + rules + breathing room + legend/signature block
+  return EXTRAS_GAP + rulesHeight + 40 + LEGEND_BLOCK_H;
+}
+
+function maxDataRowsForHeight(availableBelowHeader: number): number {
+  // Header row + N data rows must fit in availableBelowHeader.
+  return Math.max(0, Math.floor(availableBelowHeader / ROW_H) - 1);
+}
+
 /**
- * Size columns so the longest NAME (and CODE, when present) fit on one line.
- * Extra width comes from day columns / right margin; day headers shorten
- * when full weekday names no longer fit.
+ * Split rows so every page fits, and the last table page leaves room for
+ * extras when requested. If extras cannot share a page with even one row,
+ * they are drawn on their own page afterward.
  */
+function chunkRows(
+  rows: GateSheetPdfRow[],
+  pageH: number,
+  reserveExtras: number
+): GateSheetPdfRow[][] {
+  if (rows.length === 0) return [[]];
+
+  const usable = pageH - HEADER_TOP - PAGE_BOTTOM_MARGIN;
+  const maxFull = Math.max(1, maxDataRowsForHeight(usable));
+  const maxWithExtras =
+    reserveExtras > 0
+      ? maxDataRowsForHeight(usable - reserveExtras)
+      : maxFull;
+
+  const chunks: GateSheetPdfRow[][] = [];
+  let remaining = rows.slice();
+
+  while (remaining.length > 0) {
+    // Fits on one page with boilerplate underneath.
+    if (maxWithExtras >= 1 && remaining.length <= maxWithExtras) {
+      chunks.push(remaining);
+      break;
+    }
+
+    // Fits as a table-only page; boilerplate will follow on a new page.
+    if (remaining.length <= maxFull) {
+      chunks.push(remaining);
+      break;
+    }
+
+    // More than one page of rows: fill this page, then continue.
+    // If the leftover after a full page fits with extras, take maxFull now
+    // and finish on the next page with boilerplate.
+    chunks.push(remaining.slice(0, maxFull));
+    remaining = remaining.slice(maxFull);
+  }
+
+  return chunks;
+}
+
 function computeCols(
   doc: InstanceType<typeof jsPDF>,
   rows: GateSheetPdfRow[],
@@ -205,12 +292,13 @@ function computeCols(
   return { cols, dayLabels, includeCode };
 }
 
-function drawGateTable(
+/** Draw one table chunk (header + rows). Returns the table bottom y. */
+function drawGateTableChunk(
   doc: InstanceType<typeof jsPDF>,
   rows: GateSheetPdfRow[],
-  includeCode: boolean
+  layout: ColumnLayout
 ): number {
-  const { cols, dayLabels } = computeCols(doc, rows, includeCode);
+  const { cols, dayLabels, includeCode } = layout;
   const tableLeft = cols[0];
   const tableRight = cols[cols.length - 1];
   const tableBottom = HEADER_TOP + ROW_H * (1 + rows.length);
@@ -277,30 +365,36 @@ function drawGateTable(
 
 function drawFullExtras(
   doc: InstanceType<typeof jsPDF>,
-  tableBottom: number
+  startY: number
 ): void {
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
+  const { blocks, ruleLeft, ruleIndent, lineH } = buildRuleBlocks(doc);
 
-  let textY = tableBottom + 16;
+  let textY = startY;
   doc.setFont(FONT, "bold");
   doc.setFontSize(12);
-  const ruleLeft = 90;
-  const ruleIndent = 108;
-  const ruleMaxW = pageW - ruleIndent - 54;
-  const lineH = 15.5;
 
-  RULES.forEach((rule, i) => {
-    const prefix = `${i + 1})  `;
-    const lines = doc.splitTextToSize(rule, ruleMaxW) as string[];
-    doc.text(prefix, ruleLeft, textY);
-    lines.forEach((line, li) => {
+  for (const block of blocks) {
+    // If a rule would run past the bottom margin, continue on a new page.
+    const blockH = block.lines.length * lineH + 1.5;
+    if (textY + blockH > pageH - PAGE_BOTTOM_MARGIN - LEGEND_BLOCK_H) {
+      doc.addPage();
+      textY = HEADER_TOP;
+    }
+    doc.text(block.prefix, ruleLeft, textY);
+    block.lines.forEach((line, li) => {
       doc.text(line, ruleIndent, textY + li * lineH);
     });
-    textY += lines.length * lineH + 1.5;
-  });
+    textY += blockH;
+  }
 
-  const legendY = Math.max(textY + 40, pageH - 120);
+  let legendY = textY + 40;
+  if (legendY + LEGEND_BLOCK_H > pageH - PAGE_BOTTOM_MARGIN) {
+    doc.addPage();
+    legendY = HEADER_TOP;
+  }
+
   doc.setFont(FONT, "bold");
   doc.setFontSize(12);
   doc.text("MG – Main Gate", TABLE_LEFT, legendY);
@@ -312,7 +406,7 @@ function drawFullExtras(
   doc.text("HEAD PREFECT", sigX, legendY + 64, { align: "right" });
 }
 
-/** Build an A4 gate-sheet PDF for one batch. */
+/** Build an A4 gate-sheet PDF for one batch (multi-page when needed). */
 export function buildBatchGateSheetPdf(
   rows: GateSheetPdfRow[],
   variant: GateSheetPdfVariant = "full"
@@ -324,10 +418,26 @@ export function buildBatchGateSheetPdf(
   });
 
   const includeCode = variant !== "offProbation";
-  const tableBottom = drawGateTable(doc, rows, includeCode);
-  if (variant === "full") {
-    drawFullExtras(doc, tableBottom);
-  }
+  const pageH = doc.internal.pageSize.getHeight();
+  const layout = computeCols(doc, rows, includeCode);
+  const reserve =
+    variant === "full" ? extrasHeight(doc) : 0;
+  const chunks = chunkRows(rows, pageH, reserve);
+
+  chunks.forEach((chunk, idx) => {
+    if (idx > 0) doc.addPage();
+    const tableBottom = drawGateTableChunk(doc, chunk, layout);
+    const isLast = idx === chunks.length - 1;
+    if (variant === "full" && isLast) {
+      const need = extrasHeight(doc);
+      if (tableBottom + need <= pageH - PAGE_BOTTOM_MARGIN) {
+        drawFullExtras(doc, tableBottom + EXTRAS_GAP);
+      } else {
+        doc.addPage();
+        drawFullExtras(doc, HEADER_TOP);
+      }
+    }
+  });
 
   return doc;
 }
