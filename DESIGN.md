@@ -248,7 +248,7 @@ Focus is a 2px marigold outline, offset 2px, drawn on the page around the contro
 
 ### Navigation
 
-The sticky header carries the mark, the page title, a back control when the page is nested, and the actions. Secondary links live in a disclosure labeled with its section ("Navigate", the username). It is not an ARIA menu: arrow-key menu behavior is not implemented, so items stay ordinary links and buttons. On a phone those actions move into the header menu. The selected attendance tab sets `aria-pressed`.
+The sticky header carries the mark, the page title, a back control when the page is nested, and page actions. On desktop, destinations live in a shared **Navigate** disclosure; the account disclosure holds Users, password, and log out. On a phone (below 768px), primary destinations move to a fixed bottom tab bar — Home, Attendance, Prefects, Batches, and **More** — in the Instagram / WhatsApp pattern: equal tabs, icon + short label, marigold underline on the active tab. Secondary destinations (Gate Sheet, Tie Duties, Excuses, Suspensions, Settings) open from More as a paper sheet above the bar. Page-specific actions (Save, Add) stay in the header, collapsed behind the overflow control when needed. The selected attendance tab sets `aria-pressed`.
 
 ### Dialog
 

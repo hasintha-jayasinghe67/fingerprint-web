@@ -4,8 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { apiUrl, readApiJson } from "@/lib/api";
 import SiteHeader from "@/components/site-header";
-import HeaderMenu, { headerMenuItemClass } from "@/components/HeaderMenu";
-import { IconCheck, IconSettings } from "@/components/icons";
+import { IconCheck } from "@/components/icons";
 
 interface Prefect {
   id: number;
@@ -366,29 +365,6 @@ export default function ExcusesPage() {
         subtitle="Log email leave excuses or compose leave emails"
         backTo="/"
         maxWidth="5xl"
-        actions={
-          <HeaderMenu label="Navigate">
-            <Link href="/attendance" className={headerMenuItemClass}>
-              Attendance
-            </Link>
-            <Link href="/prefects" className={headerMenuItemClass}>
-              Prefects
-            </Link>
-            <Link href="/batches" className={headerMenuItemClass}>
-              Batches
-            </Link>
-            <Link href="/gate-sheet" className={headerMenuItemClass}>
-              Gate Sheet
-            </Link>
-            <Link href="/excuses" className={headerMenuItemClass}>
-              Excuses
-            </Link>
-            <Link href="/settings" className={headerMenuItemClass}>
-              <IconSettings className="w-3 h-3" />
-              Settings
-            </Link>
-          </HeaderMenu>
-        }
       />
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">

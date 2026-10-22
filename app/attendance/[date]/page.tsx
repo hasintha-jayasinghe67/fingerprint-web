@@ -7,10 +7,8 @@ import { apiUrl } from "@/lib/api";
 import { matchesSearch } from "@/lib/search";
 import { useAuth, isAdminOrAbove, isSuperuser } from "@/lib/AuthContext";
 import SiteHeader from "@/components/site-header";
-import HeaderMenu, { headerMenuItemClass } from "@/components/HeaderMenu";
 import Modal from "@/components/Modal";
 import {
-  IconSettings,
   IconRefresh,
   IconCheck,
   IconWarning,
@@ -548,24 +546,6 @@ export default function AttendanceDateDetailPage() {
         maxWidth="5xl"
         actions={
           <>
-            <HeaderMenu label="Navigate">
-              <Link href="/attendance" className={headerMenuItemClass}>
-                All Dates
-              </Link>
-              <Link href="/batches" className={headerMenuItemClass}>
-                Batches
-              </Link>
-              <Link href="/gate-sheet" className={headerMenuItemClass}>
-                Gate Sheet
-              </Link>
-              <Link href="/excuses" className={headerMenuItemClass}>
-                Excuses
-              </Link>
-              <Link href="/settings" className={headerMenuItemClass}>
-                <IconSettings className="w-3 h-3" />
-                Settings
-              </Link>
-            </HeaderMenu>
             <button
               onClick={() => {
                 setLoading(true);

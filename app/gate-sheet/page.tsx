@@ -10,9 +10,8 @@ import {
 import Link from "next/link";
 import { apiUrl, readApiJson } from "@/lib/api";
 import SiteHeader from "@/components/site-header";
-import HeaderMenu, { headerMenuItemClass } from "@/components/HeaderMenu";
+import { headerMenuItemClass } from "@/components/HeaderMenu";
 import {
-  IconSettings,
   IconSave,
   IconCheck,
   IconDownload,
@@ -348,24 +347,6 @@ export default function GateSheetPage() {
         backTo="/"
         actions={
           <>
-            <HeaderMenu label="Navigate">
-              <Link href="/attendance" className={headerMenuItemClass}>
-                Attendance
-              </Link>
-              <Link href="/prefects" className={headerMenuItemClass}>
-                Prefects
-              </Link>
-              <Link href="/batches" className={headerMenuItemClass}>
-                Batches
-              </Link>
-              <Link href="/excuses" className={headerMenuItemClass}>
-                Excuses
-              </Link>
-              <Link href="/settings" className={headerMenuItemClass}>
-                <IconSettings className="w-3 h-3" />
-                Settings
-              </Link>
-            </HeaderMenu>
             <button
               onClick={handleSave}
               disabled={saving || !dirty}

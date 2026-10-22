@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo, IBM_Plex_Mono } from "next/font/google";
 import { AuthProvider } from "@/lib/AuthContext";
+import AppChrome from "@/components/AppChrome";
 import "./globals.css";
 
 const archivo = Archivo({
@@ -38,7 +39,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${archivo.variable} ${plexMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-paper text-ink pb-[env(safe-area-inset-bottom)]">
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <AppChrome>{children}</AppChrome>
+        </AuthProvider>
       </body>
     </html>
   );

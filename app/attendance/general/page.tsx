@@ -6,8 +6,7 @@ import { apiUrl, readApiJson } from "@/lib/api";
 import { matchesSearch } from "@/lib/search";
 import { useAuth, isAdminOrAbove } from "@/lib/AuthContext";
 import SiteHeader from "@/components/site-header";
-import HeaderMenu, { headerMenuItemClass } from "@/components/HeaderMenu";
-import { IconArrowRight, IconRefresh, IconSettings } from "@/components/icons";
+import { IconArrowRight, IconRefresh } from "@/components/icons";
 import { formatDateDisplay } from "./helpers";
 
 interface GeneralAttendanceSummary {
@@ -72,27 +71,6 @@ export default function GeneralAttendanceListPage() {
         maxWidth="5xl"
         actions={
           <>
-            <HeaderMenu label="Navigate">
-              <Link href="/attendance" className={headerMenuItemClass}>
-                All Dates
-              </Link>
-              <Link href="/prefects" className={headerMenuItemClass}>
-                Prefects
-              </Link>
-              <Link href="/batches" className={headerMenuItemClass}>
-                Batches
-              </Link>
-              <Link href="/gate-sheet" className={headerMenuItemClass}>
-                Gate Sheet
-              </Link>
-              <Link href="/excuses" className={headerMenuItemClass}>
-                Excuses
-              </Link>
-              <Link href="/settings" className={headerMenuItemClass}>
-                <IconSettings className="w-3 h-3" />
-                Settings
-              </Link>
-            </HeaderMenu>
             {canWrite && (
               <Link
                 href="/attendance/general/new"
