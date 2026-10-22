@@ -110,3 +110,14 @@ export function IconDownload({ className = "w-3.5 h-3.5" }: IconProps) {
     </svg>
   );
 }
+
+/** Vertical three-dot (kebab) control for a compact overflow / context menu. */
+export function IconMoreVertical({ className = "w-4 h-4" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={`${base} ${className}`} aria-hidden="true">
+      <circle cx="12" cy="5" r="1.75" />
+      <circle cx="12" cy="12" r="1.75" />
+      <circle cx="12" cy="19" r="1.75" />
+    </svg>
+  );
+}

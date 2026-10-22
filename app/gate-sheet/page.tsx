@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import Link from "next/link";
 import { apiUrl, readApiJson } from "@/lib/api";
 import SiteHeader from "@/components/site-header";
@@ -10,8 +16,12 @@ import {
   IconSave,
   IconCheck,
   IconDownload,
+  IconMoreVertical,
 } from "@/components/icons";
-import { downloadBatchGateSheetPdf } from "@/lib/gateSheetPdf";
+import {
+  downloadBatchGateSheetPdf,
+  type GateSheetPdfVariant,
+} from "@/lib/gateSheetPdf";
 
 const DAYS = [
   { key: 1, label: "Monday" },
@@ -56,6 +66,94 @@ interface BatchSection {
 
 function emptyDays(): Record<number, string | null> {
   return { 1: null, 2: null, 3: null, 4: null, 5: null };
+}
+
+/** Compact kebab menu for per-batch PDF downloads (hidden until opened). */
+function BatchDownloadMenu({
+  disabled,
+  onDownload,
+}: {
+  disabled?: boolean;
+  onDownload: (variant: GateSheetPdfVariant) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onPointerDown(e: PointerEvent) {
+      const target = e.target as Node;
+      if (
+        panelRef.current?.contains(target) ||
+        buttonRef.current?.contains(target)
+      ) {
+        return;
+      }
+      setOpen(false);
+    }
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  return (
+    <div className="relative shrink-0">
+      <button
+        ref={buttonRef}
+        type="button"
+        disabled={disabled}
+        aria-label="Download options"
+        aria-expanded={open}
+        aria-haspopup="menu"
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((v) => !v);
+        }}
+        className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-md text-slate-600 border border-slate-300 bg-white hover:bg-slate-50 hover:text-slate-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <IconMoreVertical className="w-4 h-4" />
+      </button>
+      {open && (
+        <div
+          ref={panelRef}
+          role="menu"
+          className="absolute right-0 top-full mt-1.5 z-40 min-w-[14rem] rounded-lg border border-slate-200 bg-white p-1.5 shadow-lg"
+        >
+          <button
+            type="button"
+            role="menuitem"
+            className={`${headerMenuItemClass} w-full`}
+            onClick={() => {
+              setOpen(false);
+              onDownload("full");
+            }}
+          >
+            <IconDownload className="w-3.5 h-3.5 text-slate-500" />
+            Download gate sheet
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            className={`${headerMenuItemClass} w-full`}
+            onClick={() => {
+              setOpen(false);
+              onDownload("offProbation");
+            }}
+          >
+            <IconDownload className="w-3.5 h-3.5 text-slate-500" />
+            Download off probation
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function GateSheetPage() {
@@ -221,7 +319,10 @@ export default function GateSheetPage() {
     }
   };
 
-  const handleDownload = (section: BatchSection) => {
+  const handleDownload = (
+    section: BatchSection,
+    variant: GateSheetPdfVariant
+  ) => {
     downloadBatchGateSheetPdf(
       section.name,
       section.rows.map((r) => ({
@@ -229,7 +330,8 @@ export default function GateSheetPage() {
         code: r.code,
         pin: r.pin,
         days: r.days,
-      }))
+      })),
+      variant
     );
   };
 
@@ -371,20 +473,13 @@ export default function GateSheetPage() {
                   <p className="text-xs text-slate-500 mt-0.5">
                     {section.rows.length} prefect
                     {section.rows.length === 1 ? "" : "s"}
-                    {section.id == null
-                      ? " · not in a batch"
-                      : " · download prints the weekly codes sheet"}
+                    {section.id == null ? " · not in a batch" : ""}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => handleDownload(section)}
+                <BatchDownloadMenu
                   disabled={section.rows.length === 0}
-                  className="min-h-11 inline-flex items-center px-3.5 py-2 rounded-md text-xs font-medium bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <IconDownload className="w-3.5 h-3.5 mr-1.5" />
-                  Download sheet
-                </button>
+                  onDownload={(variant) => handleDownload(section, variant)}
+                />
               </div>
 
               <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
@@ -467,9 +562,9 @@ export default function GateSheetPage() {
         {!loading && rows.length > 0 && (
           <div className="mt-2 flex items-center justify-between">
             <p className="text-xs text-slate-600">
-              Select an assignment for each day, then save. Download each
-              batch sheet for printing — the PDF matches the house-prefect
-              codes roster format.
+              Select an assignment for each day, then save. Use the ⋮ menu on
+              each batch to download the full codes sheet or an off-probation
+              table-only PDF.
             </p>
             <button
               onClick={handleSave}

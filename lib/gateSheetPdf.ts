@@ -1,6 +1,7 @@
 /**
  * Client-side gate-sheet PDF matching the school printable roster layout
- * (A4 table: NAME | CODE | Mon–Fri, rules, gate legend, head-prefect signature).
+ * (A4 table: NAME | CODE | Mon–Fri). The full variant also adds rules,
+ * gate legend, and a head-prefect signature block.
  */
 
 import { jsPDF } from "jspdf";
@@ -13,6 +14,8 @@ export interface GateSheetPdfRow {
   /** Keys 1–5 = Mon–Fri; values MG / PG / PBG / null */
   days: Record<number, string | null>;
 }
+
+export type GateSheetPdfVariant = "full" | "offProbation";
 
 const DAY_KEYS = [1, 2, 3, 4, 5] as const;
 const DAY_LABELS = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"];
@@ -43,28 +46,30 @@ function formatCodeCell(code: string | null, pin: string): string {
   return c || p || "";
 }
 
-export function slugBatchFilename(name: string): string {
-  const slug = name
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_|_$/g, "");
-  return `${slug || "batch"}_codes.pdf`;
+function slugBatch(name: string): string {
+  return (
+    name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_|_$/g, "") || "batch"
+  );
 }
 
-/** Build an A4 gate-sheet PDF document for one batch. */
-export function buildBatchGateSheetPdf(
+export function slugBatchFilename(
+  name: string,
+  variant: GateSheetPdfVariant = "full"
+): string {
+  const base = slugBatch(name);
+  return variant === "offProbation"
+    ? `${base}_off_probation.pdf`
+    : `${base}_codes.pdf`;
+}
+
+function drawGateTable(
+  doc: InstanceType<typeof jsPDF>,
   rows: GateSheetPdfRow[]
-): InstanceType<typeof jsPDF> {
-  const doc = new jsPDF({
-    orientation: "portrait",
-    unit: "pt",
-    format: "a4",
-  });
-
-  const pageW = doc.internal.pageSize.getWidth();
-  const pageH = doc.internal.pageSize.getHeight();
-
+): number {
   const tableBottom = HEADER_TOP + ROW_H * (1 + rows.length);
 
   doc.setDrawColor(0);
@@ -110,6 +115,16 @@ export function buildBatchGateSheetPdf(
     });
   });
 
+  return tableBottom;
+}
+
+function drawFullExtras(
+  doc: InstanceType<typeof jsPDF>,
+  tableBottom: number
+): void {
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+
   let textY = tableBottom + 16;
   doc.setFont(FONT, "bold");
   doc.setFontSize(12);
@@ -138,6 +153,23 @@ export function buildBatchGateSheetPdf(
   const sigX = pageW - 72;
   doc.text("…………………………….", sigX, legendY + 32, { align: "right" });
   doc.text("HEAD PREFECT", sigX, legendY + 64, { align: "right" });
+}
+
+/** Build an A4 gate-sheet PDF for one batch. */
+export function buildBatchGateSheetPdf(
+  rows: GateSheetPdfRow[],
+  variant: GateSheetPdfVariant = "full"
+): InstanceType<typeof jsPDF> {
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "pt",
+    format: "a4",
+  });
+
+  const tableBottom = drawGateTable(doc, rows);
+  if (variant === "full") {
+    drawFullExtras(doc, tableBottom);
+  }
 
   return doc;
 }
@@ -145,8 +177,9 @@ export function buildBatchGateSheetPdf(
 /** Build and trigger a browser download for one batch gate sheet. */
 export function downloadBatchGateSheetPdf(
   batchName: string,
-  rows: GateSheetPdfRow[]
+  rows: GateSheetPdfRow[],
+  variant: GateSheetPdfVariant = "full"
 ): void {
-  const doc = buildBatchGateSheetPdf(rows);
-  doc.save(slugBatchFilename(batchName));
+  const doc = buildBatchGateSheetPdf(rows, variant);
+  doc.save(slugBatchFilename(batchName, variant));
 }
