@@ -1,7 +1,8 @@
 /**
- * Client-side gate-sheet PDF matching the school printable roster layout
- * (A4 table: NAME | CODE | Mon–Fri). The full variant also adds rules,
- * gate legend, and a head-prefect signature block.
+ * Client-side gate-sheet PDF matching the school printable roster layout.
+ *
+ * Full sheet: NAME | CODE | Mon–Fri, plus rules / legend / signature.
+ * Off-probation: NAME | Mon–Fri only (no CODE column, no extras).
  *
  * Column widths grow with content (especially long names) so cells stay
  * single-line and the grid stays aligned. Day columns compress first;
@@ -13,7 +14,7 @@ import { jsPDF } from "jspdf";
 
 export interface GateSheetPdfRow {
   name: string;
-  /** Prefects code (e.g. IMP). Combined with pin in the CODE column. */
+  /** Prefects table code only (e.g. IMP) — never the PIN. */
   code: string | null;
   pin: string;
   /** Keys 1–5 = Mon–Fri; values MG / PG / PBG / null */
@@ -43,7 +44,7 @@ const RULES: string[] = [
   "All House Prefects who are found to be slacking in their duties, will be exempted from duties or will have to face serious consequences.",
 ];
 
-/** Default column edges from the reference sheet (pt). */
+/** Default column edges from the reference sheet (pt): NAME|CODE|Mon–Fri. */
 const DEFAULT_COLS = [72, 179.5, 235.5, 288.5, 348.5, 424.5, 497.5, 543.5];
 const TABLE_LEFT = DEFAULT_COLS[0];
 const TABLE_RIGHT_DEFAULT = DEFAULT_COLS[DEFAULT_COLS.length - 1];
@@ -52,15 +53,12 @@ const ROW_H = 20;
 const FONT = "helvetica";
 const FONT_SIZE = 11;
 const CELL_PAD_X = 4;
-const MIN_CODE_W = 48;
+const MIN_CODE_W = 40;
 /** Narrowest a day column may become (fits "PBG" + padding). */
 const MIN_DAY_W = 32;
 
-function formatCodeCell(code: string | null, pin: string): string {
-  const c = (code || "").trim();
-  const p = (pin || "").trim();
-  if (c && p) return `${c} ${p}`;
-  return c || p || "";
+function formatCodeCell(code: string | null): string {
+  return (code || "").trim();
 }
 
 function slugBatch(name: string): string {
@@ -95,21 +93,24 @@ function measure(
 }
 
 interface ColumnLayout {
+  /** Absolute x edges: [left, afterName, (afterCode?), ...day edges, right] */
   cols: number[];
   dayLabels: string[];
+  /** When false, the CODE column is omitted (off-probation sheets). */
+  includeCode: boolean;
 }
 
 /**
- * Size columns so the longest NAME (and CODE) fit on one line.
+ * Size columns so the longest NAME (and CODE, when present) fit on one line.
  * Extra width comes from day columns / right margin; day headers shorten
  * when full weekday names no longer fit.
  */
 function computeCols(
   doc: InstanceType<typeof jsPDF>,
-  rows: GateSheetPdfRow[]
+  rows: GateSheetPdfRow[],
+  includeCode: boolean
 ): ColumnLayout {
   const pageW = doc.internal.pageSize.getWidth();
-  // Allow a slightly wider table than the reference when names need room.
   const maxRight = pageW - 28;
   const tableSpan = maxRight - TABLE_LEFT;
 
@@ -127,24 +128,23 @@ function computeCols(
       nameNeed,
       measure(doc, row.name || "", "normal") + CELL_PAD_X * 2
     );
-    codeNeed = Math.max(
-      codeNeed,
-      measure(doc, formatCodeCell(row.code, row.pin), "normal") +
-        CELL_PAD_X * 2
-    );
+    if (includeCode) {
+      codeNeed = Math.max(
+        codeNeed,
+        measure(doc, formatCodeCell(row.code), "normal") + CELL_PAD_X * 2
+      );
+    }
   }
 
-  const codeW = Math.max(MIN_CODE_W, defaultCodeW, codeNeed);
+  const codeW = includeCode
+    ? Math.max(MIN_CODE_W, defaultCodeW, codeNeed)
+    : 0;
   const minDaysTotal = MIN_DAY_W * DAY_LABELS_FULL.length;
-  // Give the name column everything it needs, unless that would leave days
-  // below their absolute minimum.
   const nameW = Math.min(
     Math.max(defaultNameW, nameNeed),
     tableSpan - codeW - minDaysTotal
   );
 
-  // Header cells are centered; they only need a little padding beyond the
-  // glyph width. Body cells (NAME/CODE) use the wider CELL_PAD_X inset.
   const fullHeaderNeeds = DAY_LABELS_FULL.map(
     (label) => measure(doc, label, "bold") + 4
   );
@@ -152,9 +152,6 @@ function computeCols(
     (label) => measure(doc, label, "bold") + 4
   );
 
-  // Stay on the reference right edge when possible. Expand toward the page
-  // margin only when name/code need more than the reference day strip allows
-  // (even with abbreviated day headers).
   const shortDaysMin = shortHeaderNeeds.reduce(
     (a, b) => a + Math.max(MIN_DAY_W, b),
     0
@@ -167,9 +164,6 @@ function computeCols(
     targetRight - TABLE_LEFT - nameW - codeW
   );
 
-  // Use full weekday names whenever each day column can hold the label
-  // text itself (light padding). Short labels are only for heavily
-  // compressed day strips after a very wide NAME column.
   const useFullHeaders = DAY_LABELS_FULL.every((label, i) => {
     const share = (defaultDayWidths[i] / defaultDaySum) * dayBudget;
     return share >= measure(doc, label, "bold") + 2;
@@ -177,8 +171,6 @@ function computeCols(
   const dayLabels = useFullHeaders ? DAY_LABELS_FULL : DAY_LABELS_SHORT;
   const headerNeeds = useFullHeaders ? fullHeaderNeeds : shortHeaderNeeds;
 
-  // Start from proportional shares of the default layout, then enforce
-  // each day's header/content minimum.
   let dayWidths = defaultDayWidths.map((dw, i) =>
     Math.max(MIN_DAY_W, headerNeeds[i], (dw / defaultDaySum) * dayBudget)
   );
@@ -204,22 +196,26 @@ function computeCols(
 
   const cols = [TABLE_LEFT];
   cols.push(cols[0] + nameW);
-  cols.push(cols[1] + codeW);
+  if (includeCode) {
+    cols.push(cols[1] + codeW);
+  }
   for (const w of dayWidths) {
     cols.push(cols[cols.length - 1] + w);
   }
-  return { cols, dayLabels };
+  return { cols, dayLabels, includeCode };
 }
 
 function drawGateTable(
   doc: InstanceType<typeof jsPDF>,
-  rows: GateSheetPdfRow[]
+  rows: GateSheetPdfRow[],
+  includeCode: boolean
 ): number {
-  const { cols, dayLabels } = computeCols(doc, rows);
+  const { cols, dayLabels } = computeCols(doc, rows, includeCode);
   const tableLeft = cols[0];
   const tableRight = cols[cols.length - 1];
   const tableBottom = HEADER_TOP + ROW_H * (1 + rows.length);
   const nameInnerW = cols[1] - cols[0] - CELL_PAD_X * 2;
+  const dayStartIdx = includeCode ? 2 : 1;
 
   doc.setDrawColor(0);
   doc.setLineWidth(0.6);
@@ -236,17 +232,17 @@ function drawGateTable(
   doc.setFontSize(FONT_SIZE);
   const headerY = HEADER_TOP + ROW_H / 2 + 3.5;
   doc.text("NAME", (cols[0] + cols[1]) / 2, headerY, { align: "center" });
-  doc.text("CODE", (cols[1] + cols[2]) / 2, headerY, { align: "center" });
+  if (includeCode) {
+    doc.text("CODE", (cols[1] + cols[2]) / 2, headerY, { align: "center" });
+  }
   dayLabels.forEach((label, i) => {
-    const cx = (cols[i + 2] + cols[i + 3]) / 2;
+    const cx = (cols[dayStartIdx + i] + cols[dayStartIdx + i + 1]) / 2;
     doc.text(label, cx, headerY, { align: "center" });
   });
 
   rows.forEach((row, idx) => {
     const y = HEADER_TOP + ROW_H * (idx + 1) + ROW_H / 2 + 3.5;
 
-    // Fit long names on one line: column already widened; shrink font only
-    // if the page still cannot give the name its full measured width.
     let nameSize = FONT_SIZE;
     doc.setFont(FONT, "normal");
     doc.setFontSize(nameSize);
@@ -259,13 +255,17 @@ function drawGateTable(
     doc.text(row.name || "", tableLeft + CELL_PAD_X, y);
     doc.setFontSize(FONT_SIZE);
 
-    const codeText = formatCodeCell(row.code, row.pin);
-    doc.text(codeText, (cols[1] + cols[2]) / 2, y, { align: "center" });
+    if (includeCode) {
+      const codeText = formatCodeCell(row.code);
+      if (codeText) {
+        doc.text(codeText, (cols[1] + cols[2]) / 2, y, { align: "center" });
+      }
+    }
 
     DAY_KEYS.forEach((dayKey, i) => {
       const assignment = row.days[dayKey];
       if (!assignment) return;
-      const cx = (cols[i + 2] + cols[i + 3]) / 2;
+      const cx = (cols[dayStartIdx + i] + cols[dayStartIdx + i + 1]) / 2;
       doc.setFont(FONT, "bold");
       doc.text(assignment, cx, y, { align: "center" });
       doc.setFont(FONT, "normal");
@@ -323,7 +323,8 @@ export function buildBatchGateSheetPdf(
     format: "a4",
   });
 
-  const tableBottom = drawGateTable(doc, rows);
+  const includeCode = variant !== "offProbation";
+  const tableBottom = drawGateTable(doc, rows, includeCode);
   if (variant === "full") {
     drawFullExtras(doc, tableBottom);
   }
