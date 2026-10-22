@@ -5,8 +5,7 @@ import Link from "next/link";
 import { apiUrl } from "@/lib/api";
 import { matchesSearch } from "@/lib/search";
 import SiteHeader from "@/components/site-header";
-import HeaderMenu, { headerMenuItemClass } from "@/components/HeaderMenu";
-import { IconSettings, IconRefresh, IconArrowRight, IconCheck } from "@/components/icons";
+import { IconRefresh, IconArrowRight, IconCheck } from "@/components/icons";
 
 // -------------------------------------------------------
 // Types
@@ -112,24 +111,6 @@ export default function AttendanceDatesPage() {
         maxWidth="5xl"
         actions={
           <>
-            <HeaderMenu label="Navigate">
-              <Link href="/prefects" className={headerMenuItemClass}>
-                Prefects
-              </Link>
-              <Link href="/batches" className={headerMenuItemClass}>
-                Batches
-              </Link>
-              <Link href="/gate-sheet" className={headerMenuItemClass}>
-                Gate Sheet
-              </Link>
-              <Link href="/excuses" className={headerMenuItemClass}>
-                Excuses
-              </Link>
-              <Link href="/settings" className={headerMenuItemClass}>
-                <IconSettings className="w-3 h-3" />
-                Settings
-              </Link>
-            </HeaderMenu>
             <Link
               href="/attendance/general"
               className="min-h-11 inline-flex items-center px-3 py-2 rounded-md text-xs font-medium bg-brand-700 text-white hover:bg-brand-800 transition-colors"

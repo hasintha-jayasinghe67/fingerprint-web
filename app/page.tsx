@@ -7,9 +7,7 @@ import { matchesSearch } from "@/lib/search";
 import { useAuth, isAdminOrAbove } from "@/lib/AuthContext";
 import SiteHeader from "@/components/site-header";
 import Modal from "@/components/Modal";
-import HeaderMenu, { headerMenuItemClass } from "@/components/HeaderMenu";
 import {
-  IconSettings,
   IconRefresh,
   IconClose,
   IconCheck,
@@ -383,35 +381,6 @@ export default function AttendancePage() {
               />
               Device {deviceOnline ? "online" : "offline"}
             </div>
-            <HeaderMenu label="Navigate">
-              <Link href="/attendance" className={headerMenuItemClass}>
-                Attendance
-              </Link>
-              <Link href="/prefects" className={headerMenuItemClass}>
-                Prefects
-              </Link>
-              <Link href="/prefects/suspend" className={headerMenuItemClass}>
-                Suspensions
-              </Link>
-              <Link href="/batches" className={headerMenuItemClass}>
-                Batches
-              </Link>
-              <Link href="/gate-sheet" className={headerMenuItemClass}>
-                Gate Sheet
-              </Link>
-              <Link href="/tie-duties" className={headerMenuItemClass}>
-                Tie Duties
-              </Link>
-              <Link href="/excuses" className={headerMenuItemClass}>
-                Excuses
-              </Link>
-              {canWrite && (
-                <Link href="/settings" className={headerMenuItemClass}>
-                  <IconSettings className="w-3 h-3" />
-                  Settings
-                </Link>
-              )}
-            </HeaderMenu>
             {canWrite && (
               <Link
                 href="/prefects/add"

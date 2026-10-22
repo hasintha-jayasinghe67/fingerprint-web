@@ -5,9 +5,8 @@ import Link from "next/link";
 import { apiUrl, readApiJson } from "@/lib/api";
 import { useAuth, isAdminOrAbove } from "@/lib/AuthContext";
 import SiteHeader from "@/components/site-header";
-import HeaderMenu, { headerMenuItemClass } from "@/components/HeaderMenu";
 import Modal from "@/components/Modal";
-import { IconClose, IconRefresh, IconSettings } from "@/components/icons";
+import { IconClose, IconRefresh } from "@/components/icons";
 
 interface Prefect {
   id: number;
@@ -198,26 +197,6 @@ export default function BatchesPage() {
         actionsLayout="wrap"
         actions={
           <>
-            <HeaderMenu label="Navigate">
-              <Link href="/attendance" className={headerMenuItemClass}>
-                Attendance
-              </Link>
-              <Link href="/prefects" className={headerMenuItemClass}>
-                Prefects
-              </Link>
-              <Link href="/gate-sheet" className={headerMenuItemClass}>
-                Gate Sheet
-              </Link>
-              <Link href="/excuses" className={headerMenuItemClass}>
-                Excuses
-              </Link>
-              {canWrite && (
-                <Link href="/settings" className={headerMenuItemClass}>
-                  <IconSettings className="w-3 h-3" />
-                  Settings
-                </Link>
-              )}
-            </HeaderMenu>
             {canWrite && (
               <Link
                 href="/batches/add"
