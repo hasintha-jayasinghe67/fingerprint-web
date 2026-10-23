@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAuth, isAdminOrAbove } from "@/lib/AuthContext";
+import { useAuth, isAdminOrAbove, isSuperuser } from "@/lib/AuthContext";
 import {
   MORE_LINKS,
   PRIMARY_TABS,
@@ -21,6 +21,7 @@ import {
   IconMoreHorizontal,
   IconPeople,
   IconSettings,
+  IconLogs,
 } from "@/components/icons";
 
 const tabIcon: Record<string, (props: { className?: string }) => ReactNode> = {
@@ -30,6 +31,7 @@ const tabIcon: Record<string, (props: { className?: string }) => ReactNode> = {
   "/batches": (p) => <IconLayers {...p} />,
   "/gate-sheet": (p) => <IconGate {...p} />,
   "/settings": (p) => <IconSettings {...p} />,
+  "/logs": (p) => <IconLogs {...p} />,
 };
 
 function TabIcon({ href, className }: { href: string; className?: string }) {
@@ -38,8 +40,16 @@ function TabIcon({ href, className }: { href: string; className?: string }) {
   return <>{Icon({ className })}</>;
 }
 
-function filterAdmin(items: NavItem[], canAdmin: boolean): NavItem[] {
-  return items.filter((item) => !item.adminOnly || canAdmin);
+function filterNav(
+  items: NavItem[],
+  canAdmin: boolean,
+  superuser: boolean
+): NavItem[] {
+  return items.filter((item) => {
+    if (item.superuserOnly) return superuser;
+    if (item.adminOnly) return canAdmin;
+    return true;
+  });
 }
 
 /**
@@ -51,6 +61,7 @@ export default function MobileBottomNav() {
   const { authenticated, user } = useAuth();
   const [moreOpen, setMoreOpen] = useState(false);
   const canAdmin = isAdminOrAbove(user);
+  const superuser = isSuperuser(user);
 
   useEffect(() => {
     setMoreOpen(false);
@@ -73,8 +84,8 @@ export default function MobileBottomNav() {
   // Visibility is gated by AppChrome; keep a hard stop here too.
   if (!authenticated || pathname === "/login") return null;
 
-  const tabs = filterAdmin(PRIMARY_TABS, canAdmin);
-  const moreLinks = filterAdmin(MORE_LINKS, canAdmin);
+  const tabs = filterNav(PRIMARY_TABS, canAdmin, superuser);
+  const moreLinks = filterNav(MORE_LINKS, canAdmin, superuser);
   const moreActive = moreTabActive(pathname);
 
   return (

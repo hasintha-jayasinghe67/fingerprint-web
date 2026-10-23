@@ -205,7 +205,6 @@ export default function PrefectsPage() {
         subtitle="Register, edit and manage house prefects"
         backTo="/"
         maxWidth="5xl"
-        actionsLayout="wrap"
         actions={
           <>
             <Link

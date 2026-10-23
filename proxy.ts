@@ -37,11 +37,31 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl;
 
-  if (!user && pathname !== "/login") {
+  function redirectToLogin() {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.search = "";
-    return NextResponse.redirect(url);
+    const redirect = NextResponse.redirect(url);
+    for (const cookie of supabaseResponse.headers.getSetCookie()) {
+      redirect.headers.append("Set-Cookie", cookie);
+    }
+    return redirect;
+  }
+
+  if (user) {
+    const { data: row, error } = await supabase
+      .from("users")
+      .select("disabled")
+      .eq("auth_id", user.id)
+      .maybeSingle();
+    if (!error && row?.disabled) {
+      await supabase.auth.signOut();
+      return redirectToLogin();
+    }
+  }
+
+  if (!user && pathname !== "/login") {
+    return redirectToLogin();
   }
 
   if (user && pathname === "/login") {

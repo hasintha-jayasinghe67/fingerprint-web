@@ -19,13 +19,17 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    const success = await login(username, password);
-    if (success) {
+    const result = await login(username, password);
+    if (result === "ok") {
       router.push("/");
-    } else {
-      setError("Invalid username or password.");
-      setLoading(false);
+      return;
     }
+    setError(
+      result === "disabled"
+        ? "This account has been disabled. Contact a superuser."
+        : "Invalid username or password."
+    );
+    setLoading(false);
   };
 
   const fieldClass =

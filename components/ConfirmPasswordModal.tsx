@@ -13,7 +13,7 @@ interface ConfirmPasswordModalProps {
   message: ReactNode;
   confirmLabel?: string;
   /** Called only after the current user's password has been verified. */
-  onVerified: () => Promise<void>;
+  onVerified: (password: string) => Promise<void>;
 }
 
 /**
@@ -54,7 +54,7 @@ export default function ConfirmPasswordModal({
         setError("Incorrect password. Action aborted.");
         return;
       }
-      await onVerified();
+      await onVerified(password);
       onClose();
     } catch (err) {
       setError(

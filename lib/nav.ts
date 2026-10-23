@@ -13,6 +13,7 @@ export type NavHref =
   | "/excuses"
   | "/settings"
   | "/users"
+  | "/logs"
   | "/prefects/suspend";
 
 export interface NavItem {
@@ -24,6 +25,8 @@ export interface NavItem {
   match?: "exact" | "prefix";
   /** Only show for admin / superuser. */
   adminOnly?: boolean;
+  /** Only show for superuser. */
+  superuserOnly?: boolean;
 }
 
 /** Primary destinations shown as bottom tabs on phones. */
@@ -42,6 +45,7 @@ export const MORE_LINKS: NavItem[] = [
   { href: "/prefects/suspend", label: "Suspensions", match: "prefix" },
   { href: "/settings", label: "Settings", match: "prefix", adminOnly: true },
   { href: "/users", label: "Users", match: "prefix", adminOnly: true },
+  { href: "/logs", label: "Logs", match: "prefix", superuserOnly: true },
 ];
 
 /** Full list for the desktop Navigate disclosure. */
@@ -54,6 +58,7 @@ export const DESKTOP_NAV: NavItem[] = [
   { href: "/tie-duties", label: "Tie Duties", match: "prefix" },
   { href: "/excuses", label: "Excuses", match: "prefix" },
   { href: "/settings", label: "Settings", match: "prefix", adminOnly: true },
+  { href: "/logs", label: "Logs", match: "prefix", superuserOnly: true },
 ];
 
 export function navItemActive(pathname: string, item: NavItem): boolean {

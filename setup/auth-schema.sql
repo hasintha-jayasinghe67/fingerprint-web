@@ -14,11 +14,15 @@ CREATE TABLE IF NOT EXISTS users (
     CHECK (role IN ('superuser', 'admin', 'view-only')),
   auth_id UUID UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT UNIQUE,
+  disabled BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
 ALTER TABLE users ALTER COLUMN auth_id SET NOT NULL;
 ALTER TABLE users ALTER COLUMN email SET NOT NULL;
+
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS disabled BOOLEAN NOT NULL DEFAULT false;
 
 CREATE INDEX IF NOT EXISTS idx_users_auth_id ON users (auth_id);
 
@@ -84,6 +88,40 @@ REVOKE ALL ON FUNCTION public.is_current_user(uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.is_current_user(uuid) TO authenticated;
 
 REVOKE ALL ON TABLE public.users FROM anon;
+
+-- 5. audit_logs — who wrote what through the web app
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  actor_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  actor_username TEXT,
+  actor_role TEXT,
+  category TEXT NOT NULL,
+  action TEXT NOT NULL,
+  summary TEXT NOT NULL,
+  method TEXT,
+  path TEXT,
+  status_code INT,
+  success BOOLEAN NOT NULL DEFAULT true,
+  ip TEXT,
+  user_agent TEXT,
+  request_body JSONB,
+  response_body JSONB
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_actor_id ON audit_logs (actor_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_category ON audit_logs (category);
+
+ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "audit_logs_select_superuser" ON audit_logs;
+CREATE POLICY "audit_logs_select_superuser" ON audit_logs FOR SELECT
+  TO authenticated
+  USING (public.current_user_role() = 'superuser');
+
+REVOKE ALL ON TABLE public.audit_logs FROM anon;
+GRANT SELECT ON TABLE public.audit_logs TO authenticated;
 
 -- Optional dashboard bootstrap (instead of the CLI):
 --   1. Authentication → Users → Add user (email = you@hpa.local, confirm)

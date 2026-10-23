@@ -5,6 +5,7 @@ import {
 } from "@/lib/supabaseServer";
 import { isValidUsername, mapUsernameToEmail } from "@/lib/emailMap";
 import { validatePassword } from "@/lib/passwordPolicy";
+import { clientIp, writeAuditLog } from "@/lib/audit";
 
 const ROLES = ["superuser", "admin", "view-only"] as const;
 
@@ -26,7 +27,7 @@ export async function POST(request: Request) {
 
   const { data: callerRow } = await supabase
     .from("users")
-    .select("id, role")
+    .select("id, role, username")
     .eq("auth_id", caller.id)
     .maybeSingle();
   if (callerRow?.role !== "superuser") {
@@ -126,6 +127,25 @@ export async function POST(request: Request) {
       { status: 409 }
     );
   }
+
+  await writeAuditLog({
+    actor: {
+      id: callerRow.id,
+      username: callerRow.username,
+      role: callerRow.role,
+    },
+    category: "users",
+    action: "users.create",
+    summary: `Created user "${username}" (${role})`,
+    method: "POST",
+    path: "/api/users",
+    statusCode: 200,
+    success: true,
+    ip: clientIp(request),
+    userAgent: request.headers.get("user-agent"),
+    requestBody: { username, role },
+    responseBody: { ok: true },
+  });
 
   return NextResponse.json({ ok: true });
 }

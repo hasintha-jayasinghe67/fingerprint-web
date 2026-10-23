@@ -83,12 +83,12 @@ const nextConfig: NextConfig = {
     ];
   },
   async rewrites() {
-    // Proxy ADMS backend APIs, but never /api/users* (Next.js user-management
-    // routes). Clients already call the backend via apiUrl() for product APIs;
-    // this rewrite remains for any relative /api/* hits.
+    // Proxy leftover relative /api/* hits to the ADMS backend, but never
+    // Next.js routes: /api/users*, /api/adms*, /api/audit*.
     return [
       {
-        source: "/api/:path((?!users(?:/.*)?$).*)",
+        source:
+          "/api/:path((?!users(?:/.*)?$|adms(?:/.*)?$|audit(?:/.*)?$).*)",
         destination: `${backendApiUrl}/api/:path*`,
       },
     ];

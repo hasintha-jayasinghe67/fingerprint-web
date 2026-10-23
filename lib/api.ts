@@ -5,12 +5,20 @@
 const BACKEND_BASE_URL = (process.env.BACKEND_API_URL ?? "").replace(/\/+$/, "");
 
 /**
- * Builds an absolute URL to the backend API. Every /api/* request in the app
- * must go through this helper so the browser calls <BACKEND_API_URL>/api/*
- * directly instead of a relative path that depends on a server-side rewrite.
+ * Builds a URL to the ADMS API. In the browser this is the same-origin
+ * `/api/adms/*` proxy so the signed-in user is attached and writes are
+ * audited. Server-side callers still hit the backend origin directly.
  */
 export function apiUrl(path: string): string {
-  return `${BACKEND_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+  const raw = path.startsWith("/") ? path : `/${path}`;
+  const qIndex = raw.indexOf("?");
+  const pathname = qIndex === -1 ? raw : raw.slice(0, qIndex);
+  const search = qIndex === -1 ? "" : raw.slice(qIndex);
+  const rest = pathname.replace(/^\/api\/?/, "");
+  if (typeof window !== "undefined") {
+    return `/api/adms/${rest}${search}`;
+  }
+  return `${BACKEND_BASE_URL}/api/${rest}${search}`;
 }
 
 /**
