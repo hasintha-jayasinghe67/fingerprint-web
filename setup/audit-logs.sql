@@ -3,8 +3,9 @@
 -- setup/auth-schema.sql.
 --
 -- Rows are written by the Next.js server (service role) on every database
--- write that goes through the web app. Superusers can SELECT; nobody else
--- can read or write this table from the client.
+-- write that goes through the web app, and on every sign-in attempt
+-- (category = 'auth'). Superusers can SELECT; nobody else can read or
+-- write this table from the client.
 
 CREATE TABLE IF NOT EXISTS audit_logs (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -28,6 +29,8 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_actor_id ON audit_logs (actor_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_category ON audit_logs (category);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_category_created_at ON audit_logs (category, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs (action);
 
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 

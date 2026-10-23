@@ -38,15 +38,27 @@ export async function GET(request: Request) {
 
   const rows = data || [];
   const byCategory: Record<string, number> = {};
-  const byUser: Record<string, { total: number; failed: number }> = {};
+  const byUser: Record<
+    string,
+    { total: number; failed: number; logins: number; writes: number }
+  > = {};
   const byDay: Record<string, number> = {};
   let failed = 0;
+  let logins = 0;
 
   for (const row of rows) {
     byCategory[row.category] = (byCategory[row.category] || 0) + 1;
     const name = row.actor_username || "(unknown)";
-    if (!byUser[name]) byUser[name] = { total: 0, failed: 0 };
+    if (!byUser[name]) {
+      byUser[name] = { total: 0, failed: 0, logins: 0, writes: 0 };
+    }
     byUser[name].total += 1;
+    if (row.category === "auth") {
+      logins += 1;
+      byUser[name].logins += 1;
+    } else {
+      byUser[name].writes += 1;
+    }
     if (!row.success) {
       failed += 1;
       byUser[name].failed += 1;
@@ -68,6 +80,8 @@ export async function GET(request: Request) {
     sampled: rows.length,
     capped: rows.length >= STATS_CAP,
     total: rows.length,
+    logins,
+    writes: rows.length - logins,
     failed,
     uniqueUsers: users.length,
     byCategory,

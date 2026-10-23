@@ -143,6 +143,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  const recordLogin = async (username: string, result?: LoginResult) => {
+    try {
+      await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, result }),
+      });
+    } catch {
+      // Audit logging must not block sign-in.
+    }
+  };
+
   const login = async (
     username: string,
     password: string
@@ -153,11 +165,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password,
     });
     if (error || !data.session) {
-      if (error && /banned/i.test(error.message)) return "disabled";
-      return "invalid";
+      const result: LoginResult =
+        error && /banned/i.test(error.message) ? "disabled" : "invalid";
+      await recordLogin(username, result);
+      return result;
     }
     const resolved = await resolveUser(data.session.user.id);
-    return resolved ? "ok" : "disabled";
+    const result: LoginResult = resolved ? "ok" : "disabled";
+    await recordLogin(username, result);
+    return result;
   };
 
   const logout = async () => {

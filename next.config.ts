@@ -84,11 +84,11 @@ const nextConfig: NextConfig = {
   },
   async rewrites() {
     // Proxy leftover relative /api/* hits to the ADMS backend, but never
-    // Next.js routes: /api/users*, /api/adms*, /api/audit*.
+    // Next.js routes: /api/users*, /api/adms*, /api/audit*, /api/auth*.
     return [
       {
         source:
-          "/api/:path((?!users(?:/.*)?$|adms(?:/.*)?$|audit(?:/.*)?$).*)",
+          "/api/:path((?!users(?:/.*)?$|adms(?:/.*)?$|audit(?:/.*)?$|auth(?:/.*)?$).*)",
         destination: `${backendApiUrl}/api/:path*`,
       },
     ];

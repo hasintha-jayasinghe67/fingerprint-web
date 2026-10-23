@@ -1,4 +1,5 @@
 export const AUDIT_CATEGORIES = [
+  "auth",
   "attendance",
   "gate_sheet",
   "tie_duties",
@@ -16,6 +17,8 @@ export type AuditCategory = (typeof AUDIT_CATEGORIES)[number];
 
 export function categoryLabel(category: string): string {
   switch (category) {
+    case "auth":
+      return "Logins";
     case "attendance":
       return "Attendance";
     case "gate_sheet":

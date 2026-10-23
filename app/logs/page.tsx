@@ -31,10 +31,18 @@ interface AuditStats {
   sampled: number;
   capped: boolean;
   total: number;
+  logins: number;
+  writes: number;
   failed: number;
   uniqueUsers: number;
   byCategory: Record<string, number>;
-  users: { username: string; total: number; failed: number }[];
+  users: {
+    username: string;
+    total: number;
+    failed: number;
+    logins: number;
+    writes: number;
+  }[];
   daysSeries: { date: string; count: number }[];
 }
 
@@ -69,6 +77,8 @@ function prettyJson(value: unknown): string {
 
 function categoryChipClass(category: string): string {
   switch (category) {
+    case "auth":
+      return "bg-brand-100 text-brand-900";
     case "attendance":
       return "bg-emerald-50 text-emerald-800";
     case "gate_sheet":
@@ -247,7 +257,7 @@ export default function LogsPage() {
     <div className="min-h-screen">
       <SiteHeader
         title="Logs"
-        subtitle="Who wrote what, and the raw request behind it"
+        subtitle="Who signed in, who wrote what, and the raw request behind it"
         backTo="/"
         maxWidth="7xl"
         actions={
@@ -268,9 +278,9 @@ export default function LogsPage() {
             Activity
           </h2>
           <p className="text-sm text-slate-600 mt-0.5">
-            Every attendance save, gate-sheet change, tie-duty assignment, and
-            other database write made through this app. Fingerprint device scans
-            themselves are not recorded here.
+            Sign-ins, attendance saves, gate-sheet changes, tie-duty
+            assignments, and other database writes made through this app.
+            Fingerprint device scans themselves are not recorded here.
           </p>
         </div>
 
@@ -285,46 +295,40 @@ export default function LogsPage() {
 
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <StatCard
+            label="Logins (30 days)"
+            value={statsLoading ? "…" : String(stats?.logins ?? 0)}
+            hint="Successful and failed sign-ins"
+          />
+          <StatCard
             label="Writes (30 days)"
-            value={statsLoading ? "…" : String(stats?.total ?? 0)}
+            value={statsLoading ? "…" : String(stats?.writes ?? 0)}
             hint={
               stats?.capped
                 ? `Sampled first ${stats.sampled.toLocaleString()} rows`
-                : "All writes in the window"
+                : "Database writes in the window"
             }
           />
           <StatCard
-            label="Failed writes"
+            label="Failed"
             value={statsLoading ? "…" : String(stats?.failed ?? 0)}
-            hint="Upstream errors and rejected saves"
+            hint="Rejected sign-ins and failed saves"
             tone={stats && stats.failed > 0 ? "warn" : "plain"}
           />
           <StatCard
-            label="People writing"
+            label="People"
             value={statsLoading ? "…" : String(stats?.uniqueUsers ?? 0)}
-            hint="Distinct signed-in accounts"
-          />
-          <StatCard
-            label="Most active"
-            value={
-              statsLoading
-                ? "…"
-                : stats?.users[0]?.username || "—"
-            }
-            hint={
-              stats?.users[0]
-                ? `${stats.users[0].total} write${stats.users[0].total === 1 ? "" : "s"}`
-                : "No activity yet"
-            }
+            hint="Distinct accounts in the log"
           />
         </section>
 
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4 sm:p-5">
             <h3 className="text-sm font-semibold text-slate-900 mb-1">
-              Writes by day
+              Activity by day
             </h3>
-            <p className="text-xs text-slate-600 mb-4">Last {STATS_DAYS} days</p>
+            <p className="text-xs text-slate-600 mb-4">
+              Sign-ins and writes, last {STATS_DAYS} days
+            </p>
             {statsLoading ? (
               <p className="text-sm text-slate-600">Loading…</p>
             ) : (
@@ -388,8 +392,7 @@ export default function LogsPage() {
               Who did what
             </h3>
             <p className="text-xs text-slate-600 mt-0.5">
-              Signed-in accounts that wrote through the app in the last{" "}
-              {STATS_DAYS} days
+              Sign-ins and writes per account in the last {STATS_DAYS} days
             </p>
           </div>
           {statsLoading ? (
@@ -403,6 +406,9 @@ export default function LogsPage() {
                   <tr className="bg-slate-50 border-b border-slate-200">
                     <th className="text-left px-4 py-3 font-medium text-slate-600">
                       User
+                    </th>
+                    <th className="text-right px-4 py-3 font-medium text-slate-600">
+                      Logins
                     </th>
                     <th className="text-right px-4 py-3 font-medium text-slate-600">
                       Writes
@@ -419,7 +425,10 @@ export default function LogsPage() {
                         {row.username}
                       </td>
                       <td className="px-4 py-3 text-right font-mono text-slate-800">
-                        {row.total}
+                        {row.logins}
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono text-slate-800">
+                        {row.writes}
                       </td>
                       <td
                         className={`px-4 py-3 text-right font-mono ${

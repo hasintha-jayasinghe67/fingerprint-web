@@ -89,7 +89,7 @@ GRANT EXECUTE ON FUNCTION public.is_current_user(uuid) TO authenticated;
 
 REVOKE ALL ON TABLE public.users FROM anon;
 
--- 5. audit_logs — who wrote what through the web app
+-- 5. audit_logs — who wrote what through the web app, including sign-ins
 CREATE TABLE IF NOT EXISTS audit_logs (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -112,6 +112,8 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_actor_id ON audit_logs (actor_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_category ON audit_logs (category);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_category_created_at ON audit_logs (category, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs (action);
 
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 
