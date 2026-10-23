@@ -1,5 +1,6 @@
 export const AUDIT_CATEGORIES = [
   "auth",
+  "events",
   "attendance",
   "gate_sheet",
   "tie_duties",
@@ -19,6 +20,8 @@ export function categoryLabel(category: string): string {
   switch (category) {
     case "auth":
       return "Logins";
+    case "events":
+      return "Events";
     case "attendance":
       return "Attendance";
     case "gate_sheet":

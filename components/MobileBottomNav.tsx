@@ -22,6 +22,7 @@ import {
   IconPeople,
   IconSettings,
   IconLogs,
+  IconFlag,
 } from "@/components/icons";
 
 const tabIcon: Record<string, (props: { className?: string }) => ReactNode> = {
@@ -32,6 +33,7 @@ const tabIcon: Record<string, (props: { className?: string }) => ReactNode> = {
   "/gate-sheet": (p) => <IconGate {...p} />,
   "/settings": (p) => <IconSettings {...p} />,
   "/logs": (p) => <IconLogs {...p} />,
+  "/events": (p) => <IconFlag {...p} />,
 };
 
 function TabIcon({ href, className }: { href: string; className?: string }) {

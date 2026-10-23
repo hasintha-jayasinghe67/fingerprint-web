@@ -107,6 +107,15 @@ export function classifyWrite(
   if (/^\/api\/general-attendance\/?$/.test(path) && verb === "POST") {
     return rule("attendance", "attendance.general.create", "Created general attendance");
   }
+  if (/^\/api\/special-events\/[^/]+$/.test(path) && verb === "DELETE") {
+    return rule("events", "events.delete", "Deleted a special event");
+  }
+  if (/^\/api\/special-events\/[^/]+$/.test(path) && verb === "PUT") {
+    return rule("events", "events.update", "Updated a special event");
+  }
+  if (/^\/api\/special-events\/?$/.test(path) && verb === "POST") {
+    return rule("events", "events.create", "Created a special event");
+  }
   if (/^\/api\/late-excusals/.test(path)) {
     return rule(
       "attendance",

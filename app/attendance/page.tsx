@@ -112,6 +112,12 @@ export default function AttendanceDatesPage() {
         actions={
           <>
             <Link
+              href="/events"
+              className="min-h-11 inline-flex items-center px-3 py-2 rounded-md text-xs font-medium bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition-colors"
+            >
+              Events
+            </Link>
+            <Link
               href="/attendance/general"
               className="min-h-11 inline-flex items-center px-3 py-2 rounded-md text-xs font-medium bg-brand-700 text-white hover:bg-brand-800 transition-colors"
             >

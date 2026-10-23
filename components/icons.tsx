@@ -186,6 +186,15 @@ export function IconLogs({ className = "w-5 h-5" }: IconProps) {
   );
 }
 
+export function IconFlag({ className = "w-5 h-5" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={`${base} ${className}`} aria-hidden="true">
+      <path d="M4 21V4" />
+      <path d="M4 4h10l-1.5 4L14 12H4" />
+    </svg>
+  );
+}
+
 export function IconGate({ className = "w-5 h-5" }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={`${base} ${className}`} aria-hidden="true">

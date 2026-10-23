@@ -14,6 +14,7 @@ export type NavHref =
   | "/settings"
   | "/users"
   | "/logs"
+  | "/events"
   | "/prefects/suspend";
 
 export interface NavItem {
@@ -42,6 +43,7 @@ export const MORE_LINKS: NavItem[] = [
   { href: "/gate-sheet", label: "Gate Sheet", match: "prefix" },
   { href: "/tie-duties", label: "Tie Duties", match: "prefix" },
   { href: "/excuses", label: "Excuses", match: "prefix" },
+  { href: "/events", label: "Events", match: "prefix" },
   { href: "/prefects/suspend", label: "Suspensions", match: "prefix" },
   { href: "/settings", label: "Settings", match: "prefix", adminOnly: true },
   { href: "/users", label: "Users", match: "prefix", adminOnly: true },
@@ -57,6 +59,7 @@ export const DESKTOP_NAV: NavItem[] = [
   { href: "/gate-sheet", label: "Gate Sheet", match: "prefix" },
   { href: "/tie-duties", label: "Tie Duties", match: "prefix" },
   { href: "/excuses", label: "Excuses", match: "prefix" },
+  { href: "/events", label: "Events", match: "prefix" },
   { href: "/settings", label: "Settings", match: "prefix", adminOnly: true },
   { href: "/logs", label: "Logs", match: "prefix", superuserOnly: true },
 ];

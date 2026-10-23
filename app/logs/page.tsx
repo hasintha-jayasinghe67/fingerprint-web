@@ -79,6 +79,8 @@ function categoryChipClass(category: string): string {
   switch (category) {
     case "auth":
       return "bg-brand-100 text-brand-900";
+    case "events":
+      return "bg-violet-50 text-violet-800";
     case "attendance":
       return "bg-emerald-50 text-emerald-800";
     case "gate_sheet":
