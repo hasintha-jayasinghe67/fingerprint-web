@@ -1,16 +1,79 @@
 @import "tailwindcss";
 
+/* Class on <html>, not the system preference. The header icon sets it. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /*
  * Design tokens — slate + marigold.
  * Marigold is the action color. Primary fills use brand-700 so white
  * labels clear WCAG AA (6.09:1). brand-600 is too light for white text.
  * Everything else is neutral slate on a flat paper background.
+ *
+ * Dark mode remaps the same tokens: night paper, light ink, marigold
+ * unchanged on buttons. Washes deepen; caption text lifts so facts
+ * stay readable on the dark sheet.
  */
 :root {
   --paper: #f2f3f1;
   --ink: #1b1e1d;
   --action: #8f5413;
   --action-hover: #744314;
+}
+
+html.dark {
+  color-scheme: dark;
+  --paper: #141615;
+  --ink: #e8e6e0;
+  --action: #e2b15a;
+  --action-hover: #c9963d;
+
+  /* Sheets. text-white is restored below so button labels stay white. */
+  --color-white: #1c201e;
+
+  --color-slate-50: #222624;
+  --color-slate-100: #2a302c;
+  --color-slate-200: #3a403c;
+  --color-slate-300: #515853;
+  --color-slate-400: #8e968f;
+  --color-slate-500: #a7aea8;
+  --color-slate-600: #c3c8c1;
+  --color-slate-700: #d6dad3;
+  /* 800/900 stay control fills (Refresh, selected tabs). Text is overridden. */
+  --color-slate-800: #2e3431;
+  --color-slate-900: #191d1b;
+
+  --color-red-50: #2a1718;
+  --color-red-100: #3a1d1f;
+  --color-red-200: #5c2a2e;
+  --color-red-300: #7a353b;
+
+  --color-emerald-50: #13241c;
+  --color-emerald-100: #1a3326;
+  --color-emerald-200: #24563a;
+
+  --color-amber-50: #2a2112;
+  --color-amber-100: #3a2c14;
+  --color-amber-200: #5c451c;
+  --color-amber-300: #7a5c22;
+
+  --color-sky-50: #12202a;
+  --color-sky-100: #173044;
+  --color-sky-200: #1e4a66;
+
+  --color-violet-50: #22182e;
+  --color-violet-100: #2e2040;
+  --color-violet-200: #4a3470;
+  --color-violet-300: #5e4588;
+
+  --color-rose-50: #2a1520;
+  --color-rose-100: #3d1c2c;
+  --color-rose-200: #5c2a40;
+
+  --color-brand-50: #2a2114;
+  --color-brand-100: #3a2c16;
+  --color-brand-200: #5c4520;
+  --color-brand-300: #7a5a28;
+  --color-brand-400: #e2b15a;
 }
 
 @theme inline {
@@ -49,6 +112,163 @@ body {
 ::selection {
   background: #eed39d;
   color: var(--ink);
+}
+
+html.dark ::selection {
+  background: #5c4318;
+  color: #f6e8cc;
+}
+
+/*
+ * Tokens shared by a fill and a label. Fills keep the night control color;
+ * the label is lifted so it still reads on a dark sheet.
+ */
+html.dark .text-white {
+  color: #fff;
+}
+
+html.dark .border-white {
+  border-color: #fff;
+}
+
+html.dark .text-slate-800,
+html.dark .hover\:text-slate-800:hover {
+  color: #e7e9e4;
+}
+
+html.dark .text-slate-900,
+html.dark .hover\:text-slate-900:hover {
+  color: #f4f5f2;
+}
+
+html.dark .border-slate-800 {
+  border-color: #c5c9c2;
+}
+
+html.dark .text-red-600 {
+  color: #fca5a5;
+}
+
+html.dark .text-red-700,
+html.dark .hover\:text-red-700:hover {
+  color: #fecaca;
+}
+
+html.dark .text-red-800,
+html.dark .hover\:text-red-800:hover {
+  color: #ffe4e6;
+}
+
+html.dark .border-red-700 {
+  border-color: #fca5a5;
+}
+
+html.dark .text-emerald-500,
+html.dark .text-emerald-600 {
+  color: #6ee7b7;
+}
+
+html.dark .text-emerald-700 {
+  color: #a7f3d0;
+}
+
+html.dark .text-emerald-800 {
+  color: #d1fae5;
+}
+
+html.dark .text-amber-700 {
+  color: #fcd34d;
+}
+
+html.dark .text-amber-800 {
+  color: #fde68a;
+}
+
+html.dark .border-amber-600 {
+  border-color: #fbbf24;
+}
+
+html.dark .text-sky-700 {
+  color: #7dd3fc;
+}
+
+html.dark .text-sky-800 {
+  color: #bae6fd;
+}
+
+html.dark .text-violet-600 {
+  color: #c4b5fd;
+}
+
+html.dark .text-violet-700 {
+  color: #ddd6fe;
+}
+
+html.dark .text-violet-800 {
+  color: #ede9fe;
+}
+
+html.dark .border-violet-700 {
+  border-color: #c4b5fd;
+}
+
+html.dark .text-rose-600,
+html.dark .border-rose-600 {
+  color: #fda4af;
+  border-color: #fb7185;
+}
+
+html.dark .text-rose-700 {
+  color: #fecdd3;
+}
+
+/* Brand fills are inlined hex, so the night washes are set here. */
+html.dark .bg-brand-50,
+html.dark .hover\:bg-brand-50:hover {
+  background-color: #2a2114;
+}
+
+html.dark .bg-brand-50\/60 {
+  background-color: color-mix(in oklab, #2a2114 60%, transparent);
+}
+
+html.dark .bg-brand-100 {
+  background-color: #3a2c16;
+}
+
+html.dark .border-brand-200 {
+  border-color: #5c4520;
+}
+
+html.dark .border-brand-300 {
+  border-color: #7a5a28;
+}
+
+html.dark .focus\:border-brand-400:focus {
+  border-color: #e2b15a;
+}
+
+html.dark .text-brand-700,
+html.dark .group:hover .group-hover\:text-brand-700 {
+  color: #e2b15a;
+}
+
+html.dark .text-brand-800,
+html.dark .group:hover .group-hover\:text-brand-800 {
+  color: #f0cf8a;
+}
+
+html.dark .text-brand-900 {
+  color: #f6e3b0;
+}
+
+html.dark .border-brand-700 {
+  border-color: #e2b15a;
+}
+
+/* Spinners keep one transparent edge after the border-color overrides above. */
+html.dark .border-t-transparent {
+  border-top-color: transparent;
 }
 
 input,

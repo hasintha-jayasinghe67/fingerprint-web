@@ -78,8 +78,12 @@ export default function NewGeneralAttendancePage() {
     );
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(
+    e: React.FormEvent,
+    overrideEntries?: GeneralPrefectEntry[]
+  ) {
     e.preventDefault();
+    const listToSave = overrideEntries ?? entries;
     setSubmitting(true);
     setError(null);
     try {
@@ -89,7 +93,7 @@ export default function NewGeneralAttendancePage() {
         body: JSON.stringify({
           name: name.trim(),
           date,
-          entries: entries.map((entry) => ({
+          entries: listToSave.map((entry) => ({
             prefectId: entry.prefectId,
             status: entry.status,
           })),
@@ -136,9 +140,11 @@ export default function NewGeneralAttendancePage() {
             error={error}
             submitLabel="Save attendance"
             cancelHref="/attendance/general"
+            showPasteTab
             onNameChange={setName}
             onDateChange={setDate}
             onStatusChange={handleStatusChange}
+            onEntriesChange={setEntries}
             onSubmit={handleSubmit}
           />
         )}

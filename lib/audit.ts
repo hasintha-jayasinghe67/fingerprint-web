@@ -107,6 +107,9 @@ export function classifyWrite(
   if (/^\/api\/general-attendance\/?$/.test(path) && verb === "POST") {
     return rule("attendance", "attendance.general.create", "Created general attendance");
   }
+  if (/^\/api\/special-events\/[^/]+\/excuses$/.test(path) && verb === "POST") {
+    return rule("events", "events.excuses", "Applied event excuses");
+  }
   if (/^\/api\/special-events\/[^/]+$/.test(path) && verb === "DELETE") {
     return rule("events", "events.delete", "Deleted a special event");
   }

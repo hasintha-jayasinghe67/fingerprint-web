@@ -1,14 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { apiUrl, readApiJson } from "@/lib/api";
 import { useAuth, isAdminOrAbove } from "@/lib/AuthContext";
 import SiteHeader from "@/components/site-header";
+import AttendanceBreakdown from "@/components/AttendanceBreakdown";
 import GeneralAttendanceForm, {
   type GeneralPrefectEntry,
 } from "../GeneralAttendanceForm";
-import { formatDateDisplay } from "../helpers";
+import { formatDateDisplay, isExcusedStatus } from "../helpers";
 
 interface GeneralAttendanceRecord {
   id: number;
@@ -59,6 +60,27 @@ export default function GeneralAttendanceDetailPage() {
     fetchData();
   }, [fetchData]);
 
+  const counts = useMemo(() => {
+    let present = 0;
+    let excused = 0;
+    let traitors = 0;
+    for (const entry of entries) {
+      if (entry.status === "Present") {
+        present += 1;
+      } else if (isExcusedStatus(entry.status)) {
+        excused += 1;
+      } else if (entry.status === "Traitor") {
+        traitors += 1;
+      }
+    }
+    return {
+      present,
+      excused,
+      traitors,
+      total: entries.length,
+    };
+  }, [entries]);
+
   function handleStatusChange(prefectId: number, status: string) {
     setEntries((prev) =>
       prev.map((entry) =>
@@ -67,9 +89,13 @@ export default function GeneralAttendanceDetailPage() {
     );
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(
+    e: React.FormEvent,
+    overrideEntries?: GeneralPrefectEntry[]
+  ) {
     e.preventDefault();
     if (!id) return;
+    const listToSave = overrideEntries ?? entries;
     setSubmitting(true);
     setError(null);
     setSaveNotice(null);
@@ -80,7 +106,7 @@ export default function GeneralAttendanceDetailPage() {
         body: JSON.stringify({
           name: recordName.trim(),
           date,
-          entries: entries.map((entry) => ({
+          entries: listToSave.map((entry) => ({
             prefectId: entry.prefectId,
             status: entry.status,
           })),
@@ -89,6 +115,9 @@ export default function GeneralAttendanceDetailPage() {
       const data = await readApiJson<{ error?: string }>(res);
       if (!res.ok) {
         throw new Error(data.error || "Failed to save record");
+      }
+      if (overrideEntries) {
+        setEntries(overrideEntries);
       }
       setSaveNotice("Attendance saved.");
     } catch (err) {
@@ -130,6 +159,16 @@ export default function GeneralAttendanceDetailPage() {
                 {saveNotice}
               </div>
             )}
+
+            <div className="mb-6">
+              <AttendanceBreakdown
+                present={counts.present}
+                excused={counts.excused}
+                traitors={counts.traitors}
+                total={counts.total}
+              />
+            </div>
+
             <GeneralAttendanceForm
               name={recordName}
               date={date}
@@ -142,6 +181,7 @@ export default function GeneralAttendanceDetailPage() {
               onNameChange={setRecordName}
               onDateChange={setDate}
               onStatusChange={handleStatusChange}
+              onEntriesChange={setEntries}
               onSubmit={handleSubmit}
             />
           </>
@@ -150,3 +190,4 @@ export default function GeneralAttendanceDetailPage() {
     </div>
   );
 }
+

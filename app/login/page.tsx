@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/AuthContext";
 import PasswordInput from "@/components/PasswordInput";
+import ThemeToggle from "@/components/ThemeToggle";
 import Image from "next/image";
 
 export default function LoginPage() {
@@ -37,6 +38,9 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12">
+      <div className="fixed top-[max(0.75rem,env(safe-area-inset-top))] right-[max(0.75rem,env(safe-area-inset-right))] z-30">
+        <ThemeToggle />
+      </div>
       <div className="w-full max-w-sm">
         <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
           <div className="px-8 pt-8 pb-6 text-center border-b border-slate-100">

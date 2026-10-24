@@ -19,6 +19,7 @@ import {
   IconSettings,
   IconLogs,
 } from "@/components/icons";
+import ThemeToggle from "@/components/ThemeToggle";
 
 interface SiteHeaderProps {
   title: string;
@@ -45,6 +46,8 @@ interface SiteHeaderProps {
 /** Logo + gaps + enough title that the page name still reads. */
 const MIN_BRAND_PX = 220;
 const HEADER_GAP_PX = 12;
+/** Always-visible theme icon, plus the gap before it. */
+const THEME_TOGGLE_PX = 44 + 8;
 
 export default function SiteHeader({
   title,
@@ -192,6 +195,7 @@ export default function SiteHeader({
         MIN_BRAND_PX +
         (backTo ? 44 + 8 : 0) +
         HEADER_GAP_PX +
+        THEME_TOGGLE_PX +
         measure.scrollWidth;
       setOverflows(needed > bar.clientWidth);
     };
@@ -381,6 +385,8 @@ export default function SiteHeader({
               {!actions && actionsLayout === "menu" && !showDesktopHamburger && (
                 <div className="md:hidden flex items-center">{accountMenu}</div>
               )}
+
+              <ThemeToggle />
             </div>
           </div>
         </div>

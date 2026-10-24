@@ -20,6 +20,7 @@ interface SpecialEventSummary {
   endAt: string;
   status: "upcoming" | "open" | "ended";
   presentCount: number;
+  excusesApplied?: boolean;
 }
 
 export default function EventsListPage() {
@@ -194,10 +195,17 @@ export default function EventsListPage() {
                       </span>
                     </div>
                     <div className="flex items-center justify-between gap-2">
-                      <span
-                        className={`text-xs font-semibold px-2 py-0.5 rounded ${eventStatusClass(event.status)}`}
-                      >
-                        {eventStatusLabel(event.status)}
+                      <span className="inline-flex flex-wrap items-center gap-1.5">
+                        <span
+                          className={`text-xs font-semibold px-2 py-0.5 rounded ${eventStatusClass(event.status)}`}
+                        >
+                          {eventStatusLabel(event.status)}
+                        </span>
+                        {event.excusesApplied && (
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
+                            Record
+                          </span>
+                        )}
                       </span>
                       <p className="text-sm text-slate-600">
                         <span className="font-semibold text-slate-800">

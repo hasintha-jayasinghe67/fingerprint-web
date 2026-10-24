@@ -6,7 +6,10 @@ import { apiUrl, readApiJson } from "@/lib/api";
 import { matchesSearch } from "@/lib/search";
 import { useAuth, isAdminOrAbove } from "@/lib/AuthContext";
 import SiteHeader from "@/components/site-header";
+import AttendanceBreakdown from "@/components/AttendanceBreakdown";
 import { IconRefresh } from "@/components/icons";
+import { GATE_STATUS_STYLES } from "@/lib/gateStatuses";
+import { avatarChar, isExcusedStatus, matchPrefectList } from "@/app/attendance/general/helpers";
 import {
   eventStatusClass,
   eventStatusLabel,
@@ -23,7 +26,8 @@ interface EventPrefect {
   class: string | null;
   code: string | null;
   timestamp?: string;
-  time?: string;
+  time?: string | null;
+  status?: string;
 }
 
 interface SpecialEventDetail {
@@ -35,6 +39,10 @@ interface SpecialEventDetail {
   presentCount: number;
   present: EventPrefect[];
   absent: EventPrefect[];
+  entries?: EventPrefect[];
+  attendanceSaved?: boolean;
+  excusesApplied?: boolean;
+  attendanceUnavailable?: boolean;
 }
 
 const fieldClass =
@@ -55,6 +63,8 @@ export default function EventDetailPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [applying, setApplying] = useState(false);
+  const [excusedText, setExcusedText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -108,6 +118,44 @@ export default function EventDetailPage() {
     );
   }, [event, query]);
 
+  const recordEntries = useMemo(() => {
+    const rows = event?.entries || [];
+    return rows.filter((row) =>
+      matchesSearch(query, row.name, row.pin, row.code, row.class, row.status, row.time)
+    );
+  }, [event, query]);
+
+  const recordCounts = useMemo(() => {
+    const rows = event?.entries || [];
+    let presentCount = 0;
+    let excused = 0;
+    let traitors = 0;
+    for (const row of rows) {
+      if (row.status === "Present") presentCount += 1;
+      else if (isExcusedStatus(row.status)) excused += 1;
+      else if (row.status === "Traitor") traitors += 1;
+    }
+    return { present: presentCount, excused, traitors, total: rows.length };
+  }, [event]);
+
+  const excusePreview = useMemo(() => {
+    if (!event?.attendanceSaved || event.excusesApplied) return null;
+    const roster = [...(event.present || []), ...(event.absent || [])];
+    const { matchedIds, unmatchedTokens } = matchPrefectList(excusedText, roster);
+    const presentIds = new Set((event.present || []).map((row) => row.prefectId));
+    let excused = 0;
+    for (const prefectId of matchedIds) {
+      if (!presentIds.has(prefectId)) excused += 1;
+    }
+    const absentCount = (event.absent || []).length;
+    return {
+      present: (event.present || []).length,
+      excused,
+      traitors: Math.max(absentCount - excused, 0),
+      unmatchedTokens,
+    };
+  }, [event, excusedText]);
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     if (!id) return;
@@ -134,6 +182,40 @@ export default function EventDetailPage() {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleExcuses(e: React.FormEvent) {
+    e.preventDefault();
+    if (!id) return;
+    setApplying(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const res = await fetch(apiUrl(`/api/special-events/${id}/excuses`), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ excused: excusedText }),
+      });
+      const data = await readApiJson<{
+        error?: string;
+        unmatched?: string[];
+      }>(res);
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to save excuses");
+      }
+      const unmatched = data.unmatched || [];
+      setNotice(
+        unmatched.length > 0
+          ? `Excuses saved. Not matched: ${unmatched.join(", ")}.`
+          : "Excuses saved."
+      );
+      setExcusedText("");
+      await fetchData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setApplying(false);
     }
   }
 
@@ -219,13 +301,23 @@ export default function EventDetailPage() {
               >
                 {eventStatusLabel(event.status)}
               </span>
-              <p className="text-sm text-slate-600">
-                <span className="font-semibold text-slate-800">
-                  {event.presentCount}
-                </span>{" "}
-                of {(event.present.length + event.absent.length).toLocaleString()}{" "}
-                prefects signed in
-              </p>
+              {event.excusesApplied ? (
+                <p className="text-sm text-slate-600">Attendance record saved</p>
+              ) : (
+                <p className="text-sm text-slate-600">
+                  <span className="font-semibold text-slate-800">
+                    {event.presentCount}
+                  </span>{" "}
+                  of{" "}
+                  {(event.present.length + event.absent.length).toLocaleString()}{" "}
+                  prefects signed in
+                </p>
+              )}
+              {event.attendanceSaved && !event.excusesApplied && (
+                <p className="text-xs font-medium text-slate-700">
+                  Attendance saved
+                </p>
+              )}
               {event.status === "open" && (
                 <p className="text-xs text-slate-600">
                   Live — refreshes every 10 seconds
@@ -259,7 +351,8 @@ export default function EventDetailPage() {
                     required
                     value={startAt}
                     onChange={(e) => setStartAt(e.target.value)}
-                    className={`${fieldClass} font-mono`}
+                    disabled={Boolean(event.attendanceSaved)}
+                    className={`${fieldClass} font-mono disabled:bg-slate-50 disabled:text-slate-500`}
                   />
                 </label>
                 <label className="flex flex-col gap-1">
@@ -271,9 +364,15 @@ export default function EventDetailPage() {
                     required
                     value={endAt}
                     onChange={(e) => setEndAt(e.target.value)}
-                    className={`${fieldClass} font-mono`}
+                    disabled={Boolean(event.attendanceSaved)}
+                    className={`${fieldClass} font-mono disabled:bg-slate-50 disabled:text-slate-500`}
                   />
                 </label>
+                {event.attendanceSaved && (
+                  <p className="sm:col-span-2 text-xs text-slate-600">
+                    The sign-in window is locked because attendance has been saved.
+                  </p>
+                )}
                 <div className="sm:col-span-2 flex flex-wrap gap-2">
                   <button
                     type="submit"
@@ -294,6 +393,95 @@ export default function EventDetailPage() {
               </form>
             )}
 
+            {event.attendanceUnavailable && (
+              <div
+                role="alert"
+                className="p-4 bg-amber-50 border border-amber-200 rounded-lg text-amber-900 text-sm"
+              >
+                Attendance could not be saved. Run{" "}
+                <span className="font-mono">migrations/special-event-attendance.sql</span>{" "}
+                in the Supabase SQL editor, then refresh.
+              </div>
+            )}
+
+            {event.attendanceSaved && !event.excusesApplied && (
+              <section className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+                <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
+                  <h2 className="text-sm font-semibold text-slate-900">
+                    Enter excuses
+                  </h2>
+                  <p className="text-sm text-slate-600 mt-1">
+                    Attendance for this window is saved. Prefects who signed in
+                    stay Present. Everyone else named here is excused, and the
+                    rest are marked Traitor. Leave the list empty to mark
+                    everyone who did not sign in as Traitor.
+                  </p>
+                </div>
+                {canWrite ? (
+                  <form onSubmit={handleExcuses} className="p-4 sm:p-6 flex flex-col gap-4">
+                    <label className="flex flex-col gap-1.5">
+                      <span className="text-xs font-medium text-slate-600">
+                        Excused prefects
+                      </span>
+                      <textarea
+                        value={excusedText}
+                        onChange={(e) => setExcusedText(e.target.value)}
+                        rows={8}
+                        placeholder={"One code, full name, surname, or PIN per line\nCOD 01\nH. Perera"}
+                        className="w-full px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-sm text-slate-900 font-mono"
+                      />
+                    </label>
+                    {excusePreview && (
+                      <div className="flex flex-col gap-2">
+                        <p className="text-sm text-slate-700">
+                          <span className="font-semibold text-emerald-700">
+                            {excusePreview.present} present
+                          </span>
+                          {" · "}
+                          <span className="font-semibold text-sky-700">
+                            {excusePreview.excused} excused
+                          </span>
+                          {" · "}
+                          <span className="font-semibold text-red-600">
+                            {excusePreview.traitors} traitor
+                            {excusePreview.traitors !== 1 ? "s" : ""}
+                          </span>
+                        </p>
+                        {excusePreview.unmatchedTokens.length > 0 && (
+                          <p className="text-sm text-amber-800">
+                            Not matched: {excusePreview.unmatchedTokens.join(", ")}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    <div>
+                      <button
+                        type="submit"
+                        disabled={applying}
+                        className="min-h-11 px-5 py-2 rounded-md bg-brand-700 text-white text-sm font-semibold hover:bg-brand-800 disabled:opacity-50"
+                      >
+                        {applying ? "Saving…" : "Save excuses"}
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <p className="p-4 sm:p-6 text-sm text-slate-600">
+                    An admin still needs to enter excuses before this becomes
+                    the attendance record.
+                  </p>
+                )}
+              </section>
+            )}
+
+            {event.excusesApplied && (
+              <AttendanceBreakdown
+                present={recordCounts.present}
+                excused={recordCounts.excused}
+                traitors={recordCounts.traitors}
+                total={recordCounts.total}
+              />
+            )}
+
             <div>
               <input
                 type="search"
@@ -305,6 +493,109 @@ export default function EventDetailPage() {
               />
             </div>
 
+            {event.excusesApplied && (
+              <section className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+                <div className="px-4 py-3 border-b border-slate-200">
+                  <h2 className="text-sm font-semibold text-slate-900">
+                    Prefects ({recordEntries.length}
+                    {query.trim() ? ` of ${event.entries?.length || 0}` : ""})
+                  </h2>
+                </div>
+                {recordEntries.length === 0 ? (
+                  <p className="p-6 text-sm text-slate-600">
+                    {query.trim()
+                      ? "No prefects match this search."
+                      : "No prefects on this record."}
+                  </p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-slate-50 border-b border-slate-200">
+                          <th className="text-left px-4 py-3 font-medium text-slate-600 hidden sm:table-cell">
+                            #
+                          </th>
+                          <th className="text-left px-4 py-3 font-medium text-slate-600">
+                            Prefect
+                          </th>
+                          <th className="text-left px-4 py-3 font-medium text-slate-600">
+                            Status
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {recordEntries.map((row, idx) => {
+                          const status = row.status || "Traitor";
+                          const isTraitor = status === "Traitor";
+                          const isExcused = isExcusedStatus(status);
+                          return (
+                            <tr
+                              key={row.prefectId}
+                              className={
+                                isTraitor ? "bg-red-50/60" : undefined
+                              }
+                            >
+                              <td className="px-4 py-3 font-mono text-slate-600 hidden sm:table-cell">
+                                {idx + 1}
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="flex items-center gap-3">
+                                  <div
+                                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${
+                                      isTraitor
+                                        ? "bg-red-100 text-red-700"
+                                        : "bg-slate-100 text-slate-600"
+                                    }`}
+                                  >
+                                    {avatarChar(row.name)}
+                                  </div>
+                                  <div>
+                                    <p
+                                      className={`font-medium ${
+                                        isTraitor
+                                          ? "text-red-800"
+                                          : "text-slate-900"
+                                      }`}
+                                    >
+                                      {row.name}
+                                    </p>
+                                    <p className="text-xs text-slate-600">
+                                      {[row.code, row.class]
+                                        .filter(Boolean)
+                                        .join(" · ") || "—"}
+                                      {status === "Present" && row.time
+                                        ? ` · ${formatClock(row.time)}`
+                                        : ""}
+                                    </p>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-4 py-3">
+                                <span
+                                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
+                                    isTraitor
+                                      ? "bg-red-600 text-white border-red-700"
+                                      : isExcused
+                                        ? "bg-sky-100 text-sky-800 border-sky-200"
+                                        : GATE_STATUS_STYLES[status] ||
+                                          "bg-slate-100 text-slate-700 border-slate-200"
+                                  }`}
+                                >
+                                  {isExcused ? "Excused" : status}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+            )}
+
+            {!event.excusesApplied && (
+            <>
             <section className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
               <div className="px-4 py-3 border-b border-slate-200">
                 <h2 className="text-sm font-semibold text-slate-900">
@@ -314,7 +605,9 @@ export default function EventDetailPage() {
               </div>
               {present.length === 0 ? (
                 <p className="p-6 text-sm text-slate-600">
-                  No prefects have scanned during this window yet.
+                  {event.attendanceSaved
+                    ? "No prefects scanned during this window."
+                    : "No prefects have scanned during this window yet."}
                 </p>
               ) : (
                 <div className="overflow-x-auto">
@@ -404,6 +697,8 @@ export default function EventDetailPage() {
                 </div>
               )}
             </section>
+            </>
+            )}
           </>
         )}
       </main>
