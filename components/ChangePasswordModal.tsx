@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/AuthContext";
 import Modal from "./Modal";
 import PasswordInput from "./PasswordInput";
+import { sanitizeSecret } from "@/lib/sanitize";
 
 interface ChangePasswordModalProps {
   isOpen: boolean;
@@ -37,16 +38,19 @@ export default function ChangePasswordModal({
   }, [isOpen]);
 
   const handleSubmit = async () => {
+    const cleanCurrent = sanitizeSecret(currentPassword);
+    const cleanNew = sanitizeSecret(newPassword);
+    const cleanConfirm = sanitizeSecret(confirmPassword);
     if (!user || busy) return;
-    if (!currentPassword || !newPassword || !confirmPassword) {
+    if (!cleanCurrent || !cleanNew || !cleanConfirm) {
       setError("All fields are required.");
       return;
     }
-    if (newPassword !== confirmPassword) {
+    if (cleanNew !== cleanConfirm) {
       setError("New passwords do not match.");
       return;
     }
-    if (newPassword.length < 8) {
+    if (cleanNew.length < 8) {
       setError("New password must be at least 8 characters.");
       return;
     }
@@ -55,14 +59,14 @@ export default function ChangePasswordModal({
     try {
       const { error: reauthError } = await supabase.auth.signInWithPassword({
         email: user.email,
-        password: currentPassword,
+        password: cleanCurrent,
       });
       if (reauthError) {
         setError("Current password is incorrect.");
         return;
       }
       const { error: updateError } = await supabase.auth.updateUser({
-        password: newPassword,
+        password: cleanNew,
       });
       if (updateError) {
         setError(updateError.message);

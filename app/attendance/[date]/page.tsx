@@ -309,14 +309,23 @@ export default function AttendanceDateDetailPage() {
   async function handleSaveGate() {
     if (!data || !canEditStatuses) return;
 
-    const entries = data.gateEntries.map((entry) => ({
-      prefectId: entry.prefectId,
-      status:
+    const updating = data.gateSaved && canEditAfterSave;
+    const entries = data.gateEntries.flatMap((entry) => {
+      const status =
         drafts[entry.prefectId] ??
         entry.status ??
         entry.defaultStatus ??
-        "To be marked",
-    }));
+        "To be marked";
+      const saved = entry.status ?? entry.defaultStatus ?? "To be marked";
+      if (updating && status === saved) return [];
+      return [{ prefectId: entry.prefectId, status }];
+    });
+
+    if (entries.length === 0) {
+      setSaveError(null);
+      setSaveNotice("No status changes to save.");
+      return;
+    }
 
     await persistGateEntries(entries, {
       force: data.gateSaved && canEditAfterSave,
@@ -431,10 +440,19 @@ export default function AttendanceDateDetailPage() {
     const block = data.slotAttendance?.[slot];
     if (!block) return;
 
-    const entries = block.entries.map((entry) => ({
-      prefectId: entry.prefectId,
-      status: slotValue(slot, entry),
-    }));
+    const updating = block.saved && canEditAfterSave;
+    const entries = block.entries.flatMap((entry) => {
+      const status = slotValue(slot, entry);
+      const saved = entry.status ?? entry.defaultStatus ?? "Absent";
+      if (updating && status === saved) return [];
+      return [{ prefectId: entry.prefectId, status }];
+    });
+
+    if (entries.length === 0) {
+      setSaveError(null);
+      setSaveNotice("No status changes to save.");
+      return;
+    }
 
     setSaving(true);
     setSaveError(null);

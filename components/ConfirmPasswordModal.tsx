@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/AuthContext";
 import Modal from "./Modal";
 import PasswordInput from "./PasswordInput";
+import { sanitizeSecret } from "@/lib/sanitize";
 
 interface ConfirmPasswordModalProps {
   isOpen: boolean;
@@ -42,19 +43,20 @@ export default function ConfirmPasswordModal({
   }, [isOpen]);
 
   const handleConfirm = async () => {
-    if (!user || busy || !password.trim()) return;
+    const cleanPassword = sanitizeSecret(password);
+    if (!user || busy || !cleanPassword) return;
     setBusy(true);
     setError("");
     try {
       const { error: authError } = await supabase.auth.signInWithPassword({
         email: user.email,
-        password,
+        password: cleanPassword,
       });
       if (authError) {
         setError("Incorrect password. Action aborted.");
         return;
       }
-      await onVerified(password);
+      await onVerified(cleanPassword);
       onClose();
     } catch (err) {
       setError(

@@ -6,6 +6,7 @@ import {
 import { isValidUsername, mapUsernameToEmail } from "@/lib/emailMap";
 import { validatePassword } from "@/lib/passwordPolicy";
 import { clientIp, writeAuditLog } from "@/lib/audit";
+import { sanitizeData } from "@/lib/sanitize";
 
 const ROLES = ["superuser", "admin", "view-only"] as const;
 
@@ -39,7 +40,11 @@ export async function POST(request: Request) {
 
   let body: { username?: string; password?: string; role?: string };
   try {
-    body = await request.json();
+    body = sanitizeData(await request.json()) as {
+      username?: string;
+      password?: string;
+      role?: string;
+    };
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }

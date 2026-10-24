@@ -6,6 +6,7 @@ import {
 import { validatePassword } from "@/lib/passwordPolicy";
 import { verifyCallerPassword } from "@/lib/verifyCallerPassword";
 import { clientIp, writeAuditLog, type AuditActor } from "@/lib/audit";
+import { sanitizeData } from "@/lib/sanitize";
 
 const ROLES = ["superuser", "admin", "view-only"] as const;
 
@@ -121,7 +122,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     confirmPassword?: string;
   };
   try {
-    body = await request.json();
+    body = sanitizeData(await request.json()) as typeof body;
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }

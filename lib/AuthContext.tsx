@@ -9,6 +9,7 @@ import {
 } from "react";
 import { supabase } from "@/lib/supabase";
 import { mapUsernameToEmail } from "@/lib/emailMap";
+import { sanitizeSecret, sanitizeText } from "@/lib/sanitize";
 
 export interface UserInfo {
   /** auth.users.id (uuid) — the Supabase Auth account id */
@@ -159,20 +160,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     username: string,
     password: string
   ): Promise<LoginResult> => {
-    const email = mapUsernameToEmail(username);
+    const cleanUsername = sanitizeText(username);
+    const cleanPassword = sanitizeSecret(password);
+    const email = mapUsernameToEmail(cleanUsername);
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
-      password,
+      password: cleanPassword,
     });
     if (error || !data.session) {
       const result: LoginResult =
         error && /banned/i.test(error.message) ? "disabled" : "invalid";
-      await recordLogin(username, result);
+      await recordLogin(cleanUsername, result);
       return result;
     }
     const resolved = await resolveUser(data.session.user.id);
     const result: LoginResult = resolved ? "ok" : "disabled";
-    await recordLogin(username, result);
+    await recordLogin(cleanUsername, result);
     return result;
   };
 

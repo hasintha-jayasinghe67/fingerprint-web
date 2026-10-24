@@ -154,6 +154,9 @@ export default function AttendancePage() {
   const canWrite = isAdminOrAbove(user);
   const [events, setEvents] = useState<AttendanceEvent[]>([]);
   const [totalPrefects, setTotalPrefects] = useState<number>(0);
+  const [prefectLookup, setPrefectLookup] = useState<
+    Record<string, { class: string | null; code: string | null }>
+  >({});
   const [devices, setDevices] = useState<DeviceInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -197,12 +200,17 @@ export default function AttendancePage() {
       const devData = await devRes.json();
       if (prefRes.ok) {
         const prefData = await prefRes.json();
+        const prefects = Array.isArray(prefData.prefects) ? prefData.prefects : [];
+        const lookup: Record<string, { class: string | null; code: string | null }> = {};
+        for (const row of prefects) {
+          lookup[String(row.pin)] = {
+            class: row.class == null ? null : String(row.class),
+            code: row.code == null ? null : String(row.code),
+          };
+        }
+        setPrefectLookup(lookup);
         setTotalPrefects(
-          typeof prefData.count === "number"
-            ? prefData.count
-            : Array.isArray(prefData.prefects)
-              ? prefData.prefects.length
-              : 0
+          typeof prefData.count === "number" ? prefData.count : prefects.length
         );
       }
 
@@ -332,17 +340,25 @@ export default function AttendancePage() {
             isMorningLate(event.timestamp.split(" ")[1] || "")
         )
       : events;
-    return base.filter((event) =>
-      matchesSearch(
+    return base.filter((event) => {
+      const prefect = prefectLookup[event.pin];
+      const late =
+        event.late ?? isMorningLate(event.timestamp.split(" ")[1] || "");
+      return matchesSearch(
         query,
         event.name,
         event.pin,
-        event.status,
+        prefect?.class,
+        prefect?.code,
+        getStatusLabel(event.status),
+        toSriLankanTime(event.timestamp),
+        late ? "Late" : "",
+        event.lateExcused ? "Late excused" : "",
         event.verifyMethod,
         event.deviceSN
-      )
-    );
-  }, [events, showLatecomers, query]);
+      );
+    });
+  }, [events, showLatecomers, query, prefectLookup]);
 
   return (
     <div className="min-h-screen">
@@ -491,21 +507,16 @@ export default function AttendancePage() {
         {/* Attendance Table */}
         {events.length > 0 && (
           <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
+            <div className="px-6 py-4 border-b border-slate-100 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
               <h3 className="font-semibold text-slate-800">
-                {showLatecomers
-                  ? `Latecomers (${displayedEvents.length})`
-                  : `Attendance log (${events.length} records)`}
+                {query.trim()
+                  ? `${showLatecomers ? "Latecomers" : "Attendance log"} (${displayedEvents.length} of ${showLatecomers ? latecomerCount : events.length})`
+                  : showLatecomers
+                    ? `Latecomers (${displayedEvents.length})`
+                    : `Attendance log (${events.length} records)`}
               </h3>
               <div className="flex flex-wrap items-center gap-2">
-                <input
-                  type="search"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search by name or PIN…"
-                  aria-label="Search today's attendance log"
-                  className="w-full sm:w-56 px-3.5 py-2 rounded-md border border-slate-300 bg-white text-slate-900 text-sm"
-                />
                 <button
                   type="button"
                   onClick={() => setShowLatecomers((v) => !v)}
@@ -531,6 +542,21 @@ export default function AttendancePage() {
                     })}
                   </p>
                 )}
+              </div>
+              </div>
+              <div>
+                <label htmlFor="today-attendance-search" className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Search attendance
+                </label>
+                <input
+                  id="today-attendance-search"
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Name, class, code, or PIN"
+                  aria-label="Search today's attendance log"
+                  className="w-full min-h-11 px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-base text-slate-900 placeholder:text-slate-600"
+                />
               </div>
             </div>
             {excuseError && (

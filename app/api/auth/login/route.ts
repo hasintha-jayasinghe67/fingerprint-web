@@ -3,6 +3,7 @@ import { createSupabaseAdminClient } from "@/lib/supabaseServer";
 import { mapUsernameToEmail } from "@/lib/emailMap";
 import { clientIp, writeAuditLog, type AuditActor } from "@/lib/audit";
 import { requireCaller } from "@/lib/requireCaller";
+import { sanitizeText } from "@/lib/sanitize";
 
 /**
  * Records a sign-in attempt in audit_logs. The browser still authenticates
@@ -20,7 +21,7 @@ export async function POST(request: Request) {
     body = {};
   }
 
-  const typedUsername = (body.username || "").trim();
+  const typedUsername = sanitizeText(body.username || "");
   const ip = clientIp(request);
   const userAgent = request.headers.get("user-agent");
   const caller = await requireCaller();

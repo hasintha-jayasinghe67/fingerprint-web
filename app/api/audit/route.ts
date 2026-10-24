@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabaseServer";
 import { AUDIT_CATEGORIES } from "@/lib/auditLabels";
 import { requireSuperuser } from "@/lib/requireCaller";
 import { areaForIp, describeAreas } from "@/lib/ipArea";
+import { sanitizeText } from "@/lib/sanitize";
 
 const PAGE_SIZE_MAX = 100;
 
@@ -11,12 +12,12 @@ export async function GET(request: Request) {
   if ("error" in auth) return auth.error;
 
   const url = new URL(request.url);
-  const category = url.searchParams.get("category") || "";
-  const actor = url.searchParams.get("actor") || "";
-  const q = url.searchParams.get("q")?.trim() || "";
+  const category = sanitizeText(url.searchParams.get("category") || "");
+  const actor = sanitizeText(url.searchParams.get("actor") || "");
+  const q = sanitizeText(url.searchParams.get("q") || "");
   const successParam = url.searchParams.get("success");
-  const from = url.searchParams.get("from");
-  const to = url.searchParams.get("to");
+  const from = sanitizeText(url.searchParams.get("from") || "") || null;
+  const to = sanitizeText(url.searchParams.get("to") || "") || null;
   const offset = Math.max(0, Number(url.searchParams.get("offset") || 0) || 0);
   const limit = Math.min(
     PAGE_SIZE_MAX,

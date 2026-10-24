@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { apiUrl, readApiJson } from "@/lib/api";
 import { useAuth, isAdminOrAbove } from "@/lib/AuthContext";
@@ -31,6 +31,7 @@ export default function GeneralAttendanceDetailPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
+  const savedStatuses = useRef(new Map<number, string>());
 
   const fetchData = useCallback(async () => {
     if (!id) return;
@@ -49,6 +50,9 @@ export default function GeneralAttendanceDetailPage() {
       setRecordName(data.name);
       setDate(data.date);
       setEntries(data.entries || []);
+      savedStatuses.current = new Map(
+        (data.entries || []).map((entry) => [entry.prefectId, entry.status])
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
@@ -96,6 +100,9 @@ export default function GeneralAttendanceDetailPage() {
     e.preventDefault();
     if (!id) return;
     const listToSave = overrideEntries ?? entries;
+    const changed = listToSave.filter(
+      (entry) => savedStatuses.current.get(entry.prefectId) !== entry.status
+    );
     setSubmitting(true);
     setError(null);
     setSaveNotice(null);
@@ -106,7 +113,7 @@ export default function GeneralAttendanceDetailPage() {
         body: JSON.stringify({
           name: recordName.trim(),
           date,
-          entries: listToSave.map((entry) => ({
+          entries: changed.map((entry) => ({
             prefectId: entry.prefectId,
             status: entry.status,
           })),
@@ -118,6 +125,9 @@ export default function GeneralAttendanceDetailPage() {
       }
       if (overrideEntries) {
         setEntries(overrideEntries);
+      }
+      for (const entry of listToSave) {
+        savedStatuses.current.set(entry.prefectId, entry.status);
       }
       setSaveNotice("Attendance saved.");
     } catch (err) {

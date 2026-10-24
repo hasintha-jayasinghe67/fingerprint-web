@@ -7,8 +7,19 @@ import {
 } from "@/lib/audit";
 import { enrichAuditSummary } from "@/lib/auditDetail";
 import { requireCaller } from "@/lib/requireCaller";
+import { sanitizeData, sanitizeSearch, sanitizeText } from "@/lib/sanitize";
 
 type RouteContext = { params: Promise<{ path: string[] }> };
+
+function sanitizeJsonBody(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return raw;
+  try {
+    return JSON.stringify(sanitizeData(JSON.parse(trimmed)));
+  } catch {
+    return raw;
+  }
+}
 
 function backendOrigin(): string {
   const url = process.env.BACKEND_API_URL?.trim().replace(/\/+$/, "");
@@ -55,12 +66,12 @@ async function handle(request: Request, { params }: RouteContext) {
   if ("error" in caller) return caller.error;
 
   const { path } = await params;
-  const search = new URL(request.url).search;
-  const apiPath = `/api/${path.join("/")}`;
+  const search = sanitizeSearch(new URL(request.url).search);
+  const apiPath = `/api/${path.map((segment) => sanitizeText(segment)).join("/")}`;
   const target = `${backendOrigin()}${apiPath}${search}`;
   const method = request.method.toUpperCase();
   const write = method !== "GET" && method !== "HEAD" && method !== "OPTIONS";
-  const rawBody = write ? await request.text() : "";
+  const rawBody = write ? sanitizeJsonBody(await request.text()) : "";
   const previous = write ? await readBeforeImage(method, apiPath) : null;
 
   let upstream: Response;
