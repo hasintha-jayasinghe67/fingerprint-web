@@ -4,6 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
  * Nightly cleanup of leave_excuses whose end date is before today in
  * Sri Lanka (Asia/Colombo). Each delete is written to audit_logs with
  * category "automation" so it shows on the logs page as Automation.
+ * A run that deletes nothing still writes one Automation row.
  *
  * Schedule: 18:30 UTC = 00:00 Asia/Colombo. See
  * setup/expire-leave-excuses-schedule.sql.
@@ -27,13 +28,13 @@ type LeaveRow = {
 
 const jsonHeaders = { "Content-Type": "application/json" };
 
+function sriLankaNow(): string {
+  const sl = new Date(Date.now() + 5.5 * 3600000);
+  return sl.toISOString().replace("T", " ").slice(0, 19);
+}
+
 function sriLankaToday(): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Colombo",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
+  return sriLankaNow().slice(0, 10);
 }
 
 function acceptedKeys(): Set<string> {
@@ -139,7 +140,32 @@ Deno.serve(async (req) => {
 
   const expired = (data ?? []) as LeaveRow[];
   if (expired.length === 0) {
-    return new Response(JSON.stringify({ today, deleted: 0 }), {
+    const ranAt = sriLankaNow();
+    const { error: logError } = await supabase.from("audit_logs").insert({
+      actor_id: null,
+      actor_username: "Automation",
+      actor_role: null,
+      category: "automation",
+      action: "automation.leave_excuse.cleanup",
+      summary: `Ran leave excuse cleanup at ${ranAt}: nothing expired`,
+      method: "CRON",
+      path: "/functions/v1/expire-leave-excuses",
+      status_code: 200,
+      success: true,
+      request_body: { today },
+      response_body: { deleted: 0, today, ranAt },
+    });
+    if (logError) {
+      return new Response(
+        JSON.stringify({
+          error: `Nothing expired, but the log write failed: ${logError.message}`,
+          today,
+          deleted: 0,
+        }),
+        { status: 500, headers: jsonHeaders },
+      );
+    }
+    return new Response(JSON.stringify({ today, deleted: 0, ranAt }), {
       status: 200,
       headers: jsonHeaders,
     });

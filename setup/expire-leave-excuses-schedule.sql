@@ -3,10 +3,30 @@
 -- Sri Lanka does not observe daylight saving.
 --
 -- Store these two secrets in Vault first (Database → Vault). Do not
--- commit the secret key.
+-- commit the secret key. create_secret fails if the name already
+-- exists; the block below updates an existing secret and creates a
+-- missing one.
 --
---   select vault.create_secret('https://PROJECT_REF.supabase.co', 'project_url');
---   select vault.create_secret('YOUR_SUPABASE_SECRET_KEY', 'secret_key');
+--   do $$
+--   begin
+--     if exists (select 1 from vault.secrets where name = 'project_url') then
+--       perform vault.update_secret(
+--         (select id from vault.secrets where name = 'project_url'),
+--         'https://PROJECT_REF.supabase.co'
+--       );
+--     else
+--       perform vault.create_secret('https://PROJECT_REF.supabase.co', 'project_url');
+--     end if;
+--
+--     if exists (select 1 from vault.secrets where name = 'secret_key') then
+--       perform vault.update_secret(
+--         (select id from vault.secrets where name = 'secret_key'),
+--         'YOUR_SUPABASE_SECRET_KEY'
+--       );
+--     else
+--       perform vault.create_secret('YOUR_SUPABASE_SECRET_KEY', 'secret_key');
+--     end if;
+--   end $$;
 --
 -- The secret key is the service_role key. The function rejects any
 -- other caller.
