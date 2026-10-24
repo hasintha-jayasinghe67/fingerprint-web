@@ -104,6 +104,8 @@ function categoryChipClass(category: string): string {
       return "bg-slate-800 text-white";
     case "devices":
       return "bg-amber-50 text-amber-800";
+    case "automation":
+      return "bg-slate-200 text-slate-800";
     default:
       return "bg-slate-100 text-slate-700";
   }

@@ -1,0 +1,6 @@
+project_id = "fingerprint-web"
+
+# Cron calls this with the secret key. JWT verification is off so the
+# function can check that key itself. See setup/expire-leave-excuses-schedule.sql.
+[functions.expire-leave-excuses]
+verify_jwt = false

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { apiUrl, readApiJson } from "@/lib/api";
 import { matchesSearch } from "@/lib/search";
@@ -43,6 +43,7 @@ interface SpecialEventDetail {
   attendanceSaved?: boolean;
   excusesApplied?: boolean;
   attendanceUnavailable?: boolean;
+  suggestedExcused?: string;
 }
 
 const fieldClass =
@@ -65,6 +66,8 @@ export default function EventDetailPage() {
   const [deleting, setDeleting] = useState(false);
   const [applying, setApplying] = useState(false);
   const [excusedText, setExcusedText] = useState("");
+  const excusesEdited = useRef(false);
+  const excusesForId = useRef<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -95,6 +98,18 @@ export default function EventDetailPage() {
     setLoading(true);
     fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    if (!id) return;
+    if (excusesForId.current !== id) {
+      excusesForId.current = id;
+      excusesEdited.current = false;
+      setExcusedText("");
+    }
+    if (excusesEdited.current) return;
+    if (!event?.attendanceSaved || event.excusesApplied) return;
+    setExcusedText(event.suggestedExcused || "");
+  }, [id, event?.attendanceSaved, event?.excusesApplied, event?.suggestedExcused]);
 
   useEffect(() => {
     if (event?.status !== "open") return;
@@ -411,10 +426,10 @@ export default function EventDetailPage() {
                     Enter excuses
                   </h2>
                   <p className="text-sm text-slate-600 mt-1">
-                    Attendance for this window is saved. Prefects who signed in
-                    stay Present. Everyone else named here is excused, and the
-                    rest are marked Traitor. Leave the list empty to mark
-                    everyone who did not sign in as Traitor.
+                    Attendance for this window is saved. Prefects on email leave
+                    that covers this event are filled in below; edit the list
+                    before saving. Prefects who signed in stay Present. Everyone
+                    else named here is excused, and the rest are marked Traitor.
                   </p>
                 </div>
                 {canWrite ? (
@@ -425,7 +440,10 @@ export default function EventDetailPage() {
                       </span>
                       <textarea
                         value={excusedText}
-                        onChange={(e) => setExcusedText(e.target.value)}
+                        onChange={(e) => {
+                          excusesEdited.current = true;
+                          setExcusedText(e.target.value);
+                        }}
                         rows={8}
                         placeholder={"One code, full name, surname, or PIN per line\nCOD 01\nH. Perera"}
                         className="w-full px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-sm text-slate-900 font-mono"

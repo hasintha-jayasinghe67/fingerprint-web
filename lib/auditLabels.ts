@@ -11,6 +11,7 @@ export const AUDIT_CATEGORIES = [
   "settings",
   "users",
   "devices",
+  "automation",
   "other",
 ] as const;
 
@@ -42,6 +43,8 @@ export function categoryLabel(category: string): string {
       return "Users";
     case "devices":
       return "Devices";
+    case "automation":
+      return "Automation";
     default:
       return "Other";
   }
