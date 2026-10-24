@@ -22,8 +22,17 @@ interface AuditLog {
   success: boolean;
   ip: string | null;
   user_agent: string | null;
+  location: string | null;
   request_body: unknown;
   response_body: unknown;
+}
+
+interface SignInSummary {
+  username: string;
+  count: number;
+  areas: string[];
+  devices: string[];
+  lastAt: string;
 }
 
 interface AuditStats {
@@ -141,6 +150,11 @@ export default function LogsPage() {
   const [searchApplied, setSearchApplied] = useState("");
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
+  const [signIns, setSignIns] = useState<SignInSummary[]>([]);
+  const [signInsCapped, setSignInsCapped] = useState(false);
+  const [signInsLoading, setSignInsLoading] = useState(true);
+  const [signInsError, setSignInsError] = useState<string | null>(null);
+
   useEffect(() => {
     if (!authenticated) {
       router.push("/login");
@@ -221,6 +235,30 @@ export default function LogsPage() {
     void loadLogs();
   }, [authenticated, allowed, loadLogs]);
 
+  const loadSignIns = useCallback(async () => {
+    setSignInsLoading(true);
+    setSignInsError(null);
+    try {
+      const res = await fetch("/api/audit/logins");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to load sign-ins");
+      }
+      setSignIns((data.logins || []) as SignInSummary[]);
+      setSignInsCapped(Boolean(data.capped));
+    } catch (err) {
+      setSignIns([]);
+      setSignInsError(err instanceof Error ? err.message : "Failed to load sign-ins");
+    } finally {
+      setSignInsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!authenticated || !allowed) return;
+    void loadSignIns();
+  }, [authenticated, allowed, loadSignIns]);
+
   const daySeries = useMemo(
     () => fillDaySeries(stats?.daysSeries || [], STATS_DAYS),
     [stats]
@@ -251,6 +289,7 @@ export default function LogsPage() {
   const refresh = () => {
     void loadStats();
     void loadLogs();
+    void loadSignIns();
   };
 
   if (!authenticated || !allowed) return null;
@@ -651,8 +690,93 @@ export default function LogsPage() {
             </div>
           )}
         </section>
+
+        <section className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+          <div className="px-4 sm:px-5 py-4 border-b border-slate-200">
+            <h3 className="text-sm font-semibold text-slate-900">
+              Website sign-ins
+            </h3>
+            <p className="text-xs text-slate-600 mt-0.5">
+              How many times each account signed in. Area is the city and
+              region estimated from the IP address. Device is read from the
+              browser.
+              {signInsCapped ? " Showing the latest 5,000 successful sign-ins." : ""}
+            </p>
+          </div>
+          {signInsError && (
+            <div
+              role="alert"
+              className="mx-4 sm:mx-5 mt-4 bg-red-50 border border-red-200 rounded-md px-4 py-3 text-sm text-red-700"
+            >
+              {signInsError}
+            </div>
+          )}
+          {signInsLoading ? (
+            <p className="p-6 text-sm text-slate-600">Loading sign-ins…</p>
+          ) : signIns.length === 0 && !signInsError ? (
+            <p className="p-6 text-sm text-slate-600">
+              No successful sign-ins recorded yet.
+            </p>
+          ) : signIns.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="text-left px-4 py-3 font-medium text-slate-600">
+                      User
+                    </th>
+                    <th className="text-right px-4 py-3 font-medium text-slate-600">
+                      Logins
+                    </th>
+                    <th className="text-left px-4 py-3 font-medium text-slate-600">
+                      Area
+                    </th>
+                    <th className="text-left px-4 py-3 font-medium text-slate-600">
+                      Device
+                    </th>
+                    <th className="text-left px-4 py-3 font-medium text-slate-600 whitespace-nowrap">
+                      Last sign-in
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {signIns.map((row) => (
+                    <tr key={row.username}>
+                      <td className="px-4 py-3 font-medium text-slate-900">
+                        {row.username}
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono text-slate-800">
+                        {row.count}
+                      </td>
+                      <td className="px-4 py-3 text-slate-800">
+                        <StackedValues values={row.areas} />
+                      </td>
+                      <td className="px-4 py-3 text-slate-800">
+                        <StackedValues values={row.devices} />
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap font-mono text-xs text-slate-700">
+                        {formatWhen(row.lastAt)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+        </section>
       </main>
     </div>
+  );
+}
+
+function StackedValues({ values }: { values: string[] }) {
+  if (values.length === 0) return <>—</>;
+  return (
+    <span className="flex flex-col gap-0.5">
+      {values.map((value) => (
+        <span key={value}>{value}</span>
+      ))}
+    </span>
   );
 }
 
@@ -755,6 +879,10 @@ function LogRow({
               <div>
                 <dt className="text-xs font-medium text-slate-600">IP</dt>
                 <dd className="font-mono text-slate-800">{log.ip || "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium text-slate-600">Location</dt>
+                <dd className="text-slate-800">{log.location || "—"}</dd>
               </div>
               <div>
                 <dt className="text-xs font-medium text-slate-600">User agent</dt>

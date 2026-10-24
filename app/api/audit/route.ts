@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
 import { AUDIT_CATEGORIES } from "@/lib/auditLabels";
 import { requireSuperuser } from "@/lib/requireCaller";
+import { areaForIp, describeAreas } from "@/lib/ipArea";
 
 const PAGE_SIZE_MAX = 100;
 
@@ -60,8 +61,14 @@ export async function GET(request: Request) {
     );
   }
 
+  const rows = data || [];
+  const areas = await describeAreas(rows.map((row) => row.ip));
+
   return NextResponse.json({
-    logs: data || [],
+    logs: rows.map((row) => ({
+      ...row,
+      location: areaForIp(areas, row.ip),
+    })),
     total: count ?? 0,
     offset,
     limit,
