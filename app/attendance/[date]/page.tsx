@@ -382,7 +382,7 @@ export default function AttendanceDateDetailPage() {
       setSaveNotice(
         unmatched.length > 0
           ? `Applied ES to ${appliedEs} and EG to ${appliedEg} prefect(s).${unmatchedNote}`
-          : `Applied ES to ${appliedEs} and EG to ${appliedEg} prefect(s). Unmarked prefects with no morning sign-in set to Traitor; those without gate duty set to Present.`
+          : `Applied ES to ${appliedEs} and EG to ${appliedEg} prefect(s). Unmarked prefects with no morning sign-in set to Traitor; those without gate duty set to Present; remaining gate-duty leftovers set to Absent.`
       );
       setExcusesOpen(false);
       await fetchData({ silent: true });
@@ -1050,10 +1050,10 @@ export default function AttendanceDateDetailPage() {
             Lists are prefilled from logged leave excuses for this date and
             anyone already marked ES/EG. Enter one prefect code, full name,
             surname, or PIN per line (commas also work). Prefects in these
-            lists become ES or EG (including those currently Present). Late may
-            be overwritten by EG only. When every line matches, remaining
-            unmarked prefects who did not sign in for the morning become
-            Traitor, and those with no gate duty today become Present.
+            lists become ES or EG, overwriting any current status. When every
+            line matches, remaining unmarked prefects who did not sign in for
+            the morning become Traitor, those with no gate duty become Present,
+            and leftover gate-duty prefects become Absent.
           </p>
 
           <div className="flex flex-col gap-1.5">

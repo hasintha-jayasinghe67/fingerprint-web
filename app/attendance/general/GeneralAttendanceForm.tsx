@@ -24,6 +24,35 @@ export interface GeneralPrefectEntry {
 }
 
 export type GeneralAttendanceTab = "manual" | "paste";
+export type StatusListTab = "all" | "traitors" | "excused" | "present";
+
+const STATUS_LIST_TABS: { id: StatusListTab; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "traitors", label: "Traitors" },
+  { id: "excused", label: "Excused" },
+  { id: "present", label: "Present" },
+];
+
+const STATUS_LIST_HINT: Record<StatusListTab, string> = {
+  all: "Mark each prefect with the same statuses used for gate attendance.",
+  traitors: "Prefects marked Traitor on this record.",
+  excused: "Prefects marked excused (EG, ES, or Excused).",
+  present: "Prefects marked Present on this record.",
+};
+
+const STATUS_LIST_EMPTY: Record<StatusListTab, string> = {
+  all: "No prefects registered yet. Add house prefects first.",
+  traitors: "No traitors marked on this record.",
+  excused: "No excused prefects on this record.",
+  present: "No prefects marked Present on this record.",
+};
+
+function matchesStatusListTab(status: string, tab: StatusListTab): boolean {
+  if (tab === "all") return true;
+  if (tab === "present") return status === "Present";
+  if (tab === "excused") return isExcusedStatus(status);
+  return status === "Traitor";
+}
 
 function buildListTextFromEntries(
   entries: GeneralPrefectEntry[],
@@ -73,6 +102,7 @@ export default function GeneralAttendanceForm({
   ) => void | Promise<void>;
 }) {
   const [activeTab, setActiveTab] = useState<GeneralAttendanceTab>(initialTab);
+  const [statusListTab, setStatusListTab] = useState<StatusListTab>("all");
   const [query, setQuery] = useState("");
   const [excusedList, setExcusedList] = useState("");
   const [presentList, setPresentList] = useState("");
@@ -81,10 +111,28 @@ export default function GeneralAttendanceForm({
   const excusedTextareaRef = useRef<HTMLTextAreaElement>(null);
   const presentTextareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const statusCounts = useMemo(() => {
+    let present = 0;
+    let excused = 0;
+    let traitors = 0;
+    for (const entry of entries) {
+      if (entry.status === "Present") present += 1;
+      else if (isExcusedStatus(entry.status)) excused += 1;
+      else if (entry.status === "Traitor") traitors += 1;
+    }
+    return {
+      all: entries.length,
+      present,
+      excused,
+      traitors,
+    };
+  }, [entries]);
+
   const visibleEntries = useMemo(
     () =>
-      entries.filter((entry) =>
-        matchesSearch(
+      entries.filter((entry) => {
+        if (!matchesStatusListTab(entry.status, statusListTab)) return false;
+        return matchesSearch(
           query,
           entry.name,
           entry.class,
@@ -92,9 +140,9 @@ export default function GeneralAttendanceForm({
           entry.pin,
           entry.status,
           isExcusedStatus(entry.status) ? "Excused" : ""
-        )
-      ),
-    [entries, query]
+        );
+      }),
+    [entries, query, statusListTab]
   );
 
   const pastePreview = useMemo(() => {
@@ -385,14 +433,52 @@ export default function GeneralAttendanceForm({
           </div>
         </div>
       ) : (
+        <div className="space-y-3">
+          {entries.length > 0 && (
+          <div
+            className="flex gap-2 overflow-x-auto pb-1"
+            aria-label="Attendance status lists"
+          >
+            {STATUS_LIST_TABS.map((tab) => {
+              const active = statusListTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => setStatusListTab(tab.id)}
+                  className={`shrink-0 min-h-11 px-4 sm:px-5 py-2.5 rounded-md text-sm font-semibold transition-colors ${
+                    active
+                      ? "bg-slate-800 text-white"
+                      : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+                  }`}
+                >
+                  {tab.label}
+                  <span
+                    className={`ml-1.5 text-xs font-medium ${
+                      active ? "text-white" : "text-slate-600"
+                    }`}
+                  >
+                    {statusCounts[tab.id]}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h3 className="font-semibold text-slate-800">
-                House prefects ({entries.length})
+                House prefects (
+                {query.trim()
+                  ? `${visibleEntries.length} of ${statusCounts[statusListTab]}`
+                  : statusCounts[statusListTab]}
+                )
               </h3>
-              <p className="text-sm text-slate-500 mt-1">
-                Mark each prefect with the same statuses used for gate attendance.
+              <p className="text-sm text-slate-600 mt-1">
+                {STATUS_LIST_HINT[statusListTab]}
               </p>
             </div>
             {entries.length > 0 && (
@@ -408,12 +494,14 @@ export default function GeneralAttendanceForm({
           </div>
 
           {entries.length === 0 ? (
-            <div className="px-6 py-10 text-sm text-slate-500 text-center">
-              No prefects registered yet. Add house prefects first.
+            <div className="px-6 py-10 text-sm text-slate-600 text-center">
+              {STATUS_LIST_EMPTY.all}
             </div>
           ) : visibleEntries.length === 0 ? (
-            <div className="px-6 py-10 text-sm text-slate-500 text-center">
-              No prefects match “{query.trim()}”.
+            <div className="px-6 py-10 text-sm text-slate-600 text-center">
+              {query.trim()
+                ? `No prefects match “${query.trim()}”.`
+                : STATUS_LIST_EMPTY[statusListTab]}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -539,6 +627,7 @@ export default function GeneralAttendanceForm({
               </table>
             </div>
           )}
+        </div>
         </div>
       )}
 
