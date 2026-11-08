@@ -4,69 +4,17 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import { apiUrl, readApiJson } from "@/lib/api";
 import { useAuth, isAdminOrAbove } from "@/lib/AuthContext";
 import SiteHeader from "@/components/site-header";
-import Modal from "@/components/Modal";
-import { IconRefresh, IconClose } from "@/components/icons";
+import { TabBar } from "@/components/ui/TabBar";
+import { IconClose } from "@/components/icons";
+import { durationDays, formatDate, formatRange, isActiveOn } from "./format";
+import { PastSuspensions } from "./PastSuspensions";
+import { PrefectSuspendList } from "./PrefectSuspendList";
+import { SuspendModal } from "./SuspendModal";
+import type { Filter, Prefect, Status, Suspension, Tab } from "./types";
 
 // -------------------------------------------------------
 // Types
 // -------------------------------------------------------
-
-interface Prefect {
-  id: number;
-  name: string;
-  class: string | null;
-  code: string | null;
-  pin: string;
-}
-
-interface Suspension {
-  id: number;
-  prefectId: number;
-  startDate: string;
-  /** Inclusive; null = ongoing. */
-  endDate: string | null;
-  reason: string | null;
-}
-
-type Status = "active" | "suspended" | "scheduled";
-type Filter = "all" | Status;
-type Tab = "prefects" | "past";
-
-const inputClass =
-  "w-full px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 text-sm transition-colors";
-
-// -------------------------------------------------------
-// Helpers
-// -------------------------------------------------------
-
-/** "2026-10-05" → "Oct 5, 2026" */
-function formatDate(ymd: string): string {
-  const [y, m, d] = ymd.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
-
-function formatRange(s: Suspension): string {
-  return s.endDate
-    ? `${formatDate(s.startDate)} – ${formatDate(s.endDate)}`
-    : `From ${formatDate(s.startDate)} (ongoing)`;
-}
-
-function isActiveOn(s: Suspension, date: string): boolean {
-  return s.startDate <= date && (s.endDate === null || s.endDate >= date);
-}
-
-/** Inclusive day count between two 'YYYY-MM-DD' dates. */
-function durationDays(start: string, end: string): number {
-  const toUtc = (ymd: string) => {
-    const [y, m, d] = ymd.split("-").map(Number);
-    return Date.UTC(y, m - 1, d);
-  };
-  return Math.round((toUtc(end) - toUtc(start)) / 86400000) + 1;
-}
 
 // -------------------------------------------------------
 // Main Component
@@ -329,435 +277,74 @@ export default function SuspendPrefectsPage() {
           </div>
         )}
 
-        {/* Tabs */}
-        <div className="flex gap-2 mb-6 overflow-x-auto" aria-label="Suspension sections">
-          {([
+        <TabBar
+          ariaLabel="Suspension sections"
+          fill
+          value={tab}
+          onChange={setTab}
+          tabs={[
             { id: "prefects", label: "Prefects" },
             { id: "past", label: `Past suspensions${pastTotal ? ` (${pastTotal})` : ""}` },
-          ] as const).map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              aria-pressed={tab === t.id}
-              onClick={() => setTab(t.id)}
-              className={`shrink-0 min-h-11 flex-1 px-4 sm:px-5 py-2.5 rounded-md text-sm font-semibold transition-colors ${
-                tab === t.id
-                  ? "bg-slate-800 text-white"
-                  : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+          ]}
+        />
 
         {tab === "prefects" && (
-        <>
-        {/* Search + filter */}
-        <div className="mb-4 flex flex-col sm:flex-row gap-3">
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by name, class, code or PIN..."
-            autoFocus
-            className={`flex-1 ${inputClass}`}
+          <PrefectSuspendList
+            query={query}
+            setQuery={setQuery}
+            filter={filter}
+            setFilter={setFilter}
+            counts={counts}
+            loading={loading}
+            prefects={prefects}
+            visible={visible}
+            fetchAll={() => { void fetchAll(); }}
+            statusOf={statusOf}
+            suspensionsByPrefect={suspensionsByPrefect}
+            canWrite={canWrite}
+            openManage={openManage}
           />
-          <div className="inline-flex rounded-md border border-slate-300 bg-white overflow-hidden text-sm shrink-0">
-            {(["all", "active", "suspended", "scheduled"] as const).map((f) => (
-              <button
-                key={f}
-                type="button"
-                onClick={() => setFilter(f)}
-                className={`px-3.5 py-2 font-medium capitalize transition-colors ${
-                  filter === f
-                    ? "bg-slate-800 text-white"
-                    : "text-slate-600 hover:bg-slate-50"
-                }`}
-              >
-                {f === "suspended" || f === "scheduled" ? `${f} (${counts[f]})` : f}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {loading && (
-          <div className="flex justify-center py-16">
-            <div className="w-6 h-6 border-2 border-slate-800 border-t-transparent rounded-full animate-spin" />
-          </div>
-        )}
-
-        {!loading && (
-          <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-              <h2 className="font-semibold text-slate-800">
-                {visible.length} Prefect{visible.length !== 1 ? "s" : ""}
-              </h2>
-              <button
-                onClick={() => { setLoading(true); fetchAll(); }}
-                className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800 font-medium transition-colors"
-              >
-                <IconRefresh className="w-3 h-3" />
-                Refresh
-              </button>
-            </div>
-
-            {visible.length === 0 ? (
-              <div className="px-6 py-12 text-center text-sm text-slate-500">
-                No prefects match your search.
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200">
-                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">Name</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 hidden md:table-cell">Class</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">PIN</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">Status</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {visible.map((p) => {
-                      const { status, current } = statusOf(p.id);
-                      const historyCount = suspensionsByPrefect.get(p.id)?.length || 0;
-                      return (
-                        <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="px-6 py-3.5">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-600 text-xs font-semibold">
-                                {p.name.charAt(0).toUpperCase()}
-                              </div>
-                              <span className="text-sm font-medium text-slate-800">{p.name}</span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-3.5 text-sm text-slate-600 hidden md:table-cell">
-                            {p.class || "—"}
-                          </td>
-                          <td className="px-6 py-3.5 text-sm font-mono font-medium text-slate-700">
-                            {p.pin}
-                          </td>
-                          <td className="px-6 py-3.5">
-                            {status === "suspended" ? (
-                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-violet-50 text-violet-700 border border-violet-200">
-                                Suspended
-                              </span>
-                            ) : status === "scheduled" ? (
-                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
-                                Scheduled
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                Active
-                              </span>
-                            )}
-                            {current && (
-                              <p className="text-xs text-slate-500 mt-1">{formatRange(current)}</p>
-                            )}
-                          </td>
-                          <td className="px-6 py-3.5 text-right">
-                            {(canWrite || historyCount > 0) && (
-                              <button
-                                onClick={() => openManage(p)}
-                                className={`min-h-11 inline-flex items-center px-3 rounded-md text-xs font-medium border transition-colors ${
-                                  canWrite && status === "active"
-                                    ? "bg-white text-violet-700 border-violet-300 hover:bg-violet-50"
-                                    : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
-                                }`}
-                              >
-                                {canWrite && status === "active" ? "Suspend" : "Manage"}
-                                {historyCount > 0 && ` (${historyCount})`}
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
-        </>
         )}
 
         {tab === "past" && (
-          <>
-            {/* Past suspension filters */}
-            <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1">Name</label>
-                <input
-                  type="search"
-                  value={pastName}
-                  onChange={(e) => setPastName(e.target.value)}
-                  placeholder="Filter by name"
-                  className={inputClass}
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1">Code</label>
-                <input
-                  type="search"
-                  value={pastCode}
-                  onChange={(e) => setPastCode(e.target.value)}
-                  placeholder="Filter by code"
-                  className={inputClass}
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1">Min duration (days)</label>
-                <input
-                  type="number"
-                  min={1}
-                  value={minDays}
-                  onChange={(e) => setMinDays(e.target.value)}
-                  placeholder="Any"
-                  className={inputClass}
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1">Max duration (days)</label>
-                <input
-                  type="number"
-                  min={1}
-                  value={maxDays}
-                  onChange={(e) => setMaxDays(e.target.value)}
-                  placeholder="Any"
-                  className={inputClass}
-                />
-              </div>
-            </div>
-
-            {loading ? (
-              <div className="flex justify-center py-16">
-                <div className="w-6 h-6 border-2 border-slate-800 border-t-transparent rounded-full animate-spin" />
-              </div>
-            ) : (
-              <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-                <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between gap-3">
-                  <h2 className="font-semibold text-slate-800">
-                    {pastRows.length} Past suspension{pastRows.length !== 1 ? "s" : ""}
-                  </h2>
-                  {pastFiltersActive && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setPastName("");
-                        setPastCode("");
-                        setMinDays("");
-                        setMaxDays("");
-                      }}
-                      className="text-xs text-slate-500 hover:text-slate-800 font-medium transition-colors"
-                    >
-                      Clear filters
-                    </button>
-                  )}
-                </div>
-
-                {pastRows.length === 0 ? (
-                  <div className="px-6 py-12 text-center text-sm text-slate-500">
-                    {pastTotal === 0
-                      ? "No suspensions have ended yet."
-                      : "No past suspensions match these filters."}
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="bg-slate-50 border-b border-slate-200">
-                          <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">Prefect</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 hidden md:table-cell">Code</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">Dates</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">Duration</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 hidden lg:table-cell">Reason</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {pastRows.map(({ suspension: s, prefect, days }) => (
-                          <tr key={s.id} className="hover:bg-slate-50/50 transition-colors">
-                            <td className="px-6 py-3.5">
-                              <p className="text-sm font-medium text-slate-800">
-                                {prefect?.name || `Prefect #${s.prefectId}`}
-                              </p>
-                              {prefect?.class && (
-                                <p className="text-xs text-slate-500">{prefect.class}</p>
-                              )}
-                            </td>
-                            <td className="px-6 py-3.5 text-sm text-slate-600 font-mono hidden md:table-cell">
-                              {prefect?.code || "—"}
-                            </td>
-                            <td className="px-6 py-3.5 text-sm text-slate-700">
-                              {formatRange(s)}
-                            </td>
-                            <td className="px-6 py-3.5 text-sm text-slate-700">
-                              {days} day{days !== 1 ? "s" : ""}
-                            </td>
-                            <td className="px-6 py-3.5 text-sm text-slate-500 hidden lg:table-cell">
-                              {s.reason || "—"}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            )}
-          </>
+          <PastSuspensions
+            pastName={pastName}
+            setPastName={setPastName}
+            pastCode={pastCode}
+            setPastCode={setPastCode}
+            minDays={minDays}
+            setMinDays={setMinDays}
+            maxDays={maxDays}
+            setMaxDays={setMaxDays}
+            loading={loading}
+            pastRows={pastRows}
+            pastFiltersActive={pastFiltersActive}
+            pastTotal={pastTotal}
+          />
         )}
       </main>
 
-      <Modal
-        isOpen={managing !== null}
-        dismissible={!saving}
-        onClose={() => {
-          if (!saving) setManaging(null);
-        }}
-        title={managing ? `Suspensions — ${managing.name}` : "Suspensions"}
-        size="lg"
-      >
-        <div className="space-y-5">
-          {formError && (
-            <div role="alert" className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
-              {formError}
-            </div>
-          )}
-
-          {/* History */}
-          <div>
-            <h3 className="text-sm font-medium text-slate-700 mb-2">History</h3>
-            {managedHistory.length === 0 ? (
-              <p className="text-sm text-slate-500">No suspensions recorded.</p>
-            ) : (
-              <ul className="divide-y divide-slate-100 border border-slate-200 rounded-md">
-                {managedHistory.map((s) => (
-                  <li
-                    key={s.id}
-                    className={`px-3 py-2.5 flex items-start justify-between gap-3 ${editingId === s.id ? "bg-brand-50" : ""}`}
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm text-slate-800">
-                        {formatRange(s)}
-                        {isActiveOn(s, today) && (
-                          <span className="ml-2 text-xs font-medium text-violet-700">Current</span>
-                        )}
-                      </p>
-                      {s.reason && (
-                        <p className="text-xs text-slate-500 mt-0.5 break-words">{s.reason}</p>
-                      )}
-                    </div>
-                    {canWrite && (
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {s.endDate === null && isActiveOn(s, today) && (
-                          <button
-                            type="button"
-                            onClick={() => handleEndToday(s)}
-                            disabled={saving}
-                            className="min-h-11 inline-flex items-center px-3 rounded-md text-xs font-medium bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 disabled:opacity-50"
-                          >
-                            End today
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => startEdit(s)}
-                          disabled={saving}
-                          className="min-h-11 inline-flex items-center px-3 rounded-md text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 disabled:opacity-50"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(s)}
-                          disabled={saving}
-                          className="min-h-11 inline-flex items-center px-3 rounded-md text-xs font-medium text-red-700 bg-red-50 border border-red-200 hover:bg-red-100 disabled:opacity-50"
-                          aria-label={`Delete suspension ${formatRange(s)}`}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          {/* Add / edit form */}
-          {canWrite && (
-            <form onSubmit={handleSubmit} className="space-y-4 border-t border-slate-100 pt-4">
-              <h3 className="text-sm font-medium text-slate-700">
-                {editingId ? "Edit suspension" : "New suspension"}
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    Start date <span className="text-red-700">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    value={formStart}
-                    onChange={(e) => setFormStart(e.target.value)}
-                    required
-                    className={inputClass}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    End date <span className="text-slate-600 font-normal">(blank = ongoing)</span>
-                  </label>
-                  <input
-                    type="date"
-                    value={formEnd}
-                    min={formStart || undefined}
-                    onChange={(e) => setFormEnd(e.target.value)}
-                    className={inputClass}
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Reason <span className="text-slate-600 font-normal">(optional)</span>
-                </label>
-                <input
-                  type="text"
-                  value={formReason}
-                  onChange={(e) => setFormReason(e.target.value)}
-                  className={inputClass}
-                />
-              </div>
-              <p className="text-xs text-slate-500">
-                Both dates are inclusive. Morning sign-ins on these dates must be 15 minutes
-                earlier than usual.
-              </p>
-              <div className="flex items-center justify-between">
-                {editingId ? (
-                  <button
-                    type="button"
-                    onClick={resetForm}
-                    disabled={saving}
-                    className="px-4 py-2 rounded-md text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors disabled:opacity-50"
-                  >
-                    Cancel edit
-                  </button>
-                ) : (
-                  <span />
-                )}
-                <button
-                  type="submit"
-                  disabled={saving || !formStart}
-                  className="px-4 py-2 rounded-md text-sm font-medium min-h-11 bg-brand-700 text-white hover:bg-brand-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {saving ? "Saving..." : editingId ? "Save changes" : "Add suspension"}
-                </button>
-              </div>
-            </form>
-          )}
-        </div>
-      </Modal>
+      <SuspendModal
+        managing={managing}
+        setManaging={setManaging}
+        saving={saving}
+        formError={formError}
+        managedHistory={managedHistory}
+        editingId={editingId}
+        today={today}
+        canWrite={canWrite}
+        handleEndToday={(s) => { void handleEndToday(s); }}
+        startEdit={startEdit}
+        handleDelete={(s) => { void handleDelete(s); }}
+        handleSubmit={handleSubmit}
+        formStart={formStart}
+        setFormStart={setFormStart}
+        formEnd={formEnd}
+        setFormEnd={setFormEnd}
+        formReason={formReason}
+        setFormReason={setFormReason}
+        resetForm={resetForm}
+      />
     </div>
   );
 }

@@ -7,9 +7,12 @@ import { matchesSearch } from "@/lib/search";
 import { useAuth, isAdminOrAbove } from "@/lib/AuthContext";
 import SiteHeader from "@/components/site-header";
 import AttendanceBreakdown from "@/components/AttendanceBreakdown";
-import { IconRefresh } from "@/components/icons";
-import { GATE_STATUS_STYLES } from "@/lib/gateStatuses";
-import { avatarChar, isExcusedStatus, matchPrefectList } from "@/app/attendance/general/helpers";
+import { PageSkeleton } from "@/components/ui/Skeleton";
+import { RefreshButton } from "@/components/ui/RefreshButton";
+import { isExcusedStatus, matchPrefectList } from "@/app/attendance/general/helpers";
+import { EventRecordTable } from "./EventRecordTable";
+import { EventRoster } from "./EventRoster";
+import type { EventPrefect, SpecialEventDetail } from "./types";
 import {
   eventStatusClass,
   eventStatusLabel,
@@ -18,33 +21,6 @@ import {
   fromDatetimeLocal,
   toDatetimeLocal,
 } from "../helpers";
-
-interface EventPrefect {
-  prefectId: number;
-  pin: string;
-  name: string;
-  class: string | null;
-  code: string | null;
-  timestamp?: string;
-  time?: string | null;
-  status?: string;
-}
-
-interface SpecialEventDetail {
-  id: number;
-  name: string;
-  startAt: string;
-  endAt: string;
-  status: "upcoming" | "open" | "ended";
-  presentCount: number;
-  present: EventPrefect[];
-  absent: EventPrefect[];
-  entries?: EventPrefect[];
-  attendanceSaved?: boolean;
-  excusesApplied?: boolean;
-  attendanceUnavailable?: boolean;
-  suggestedExcused?: string;
-}
 
 const fieldClass =
   "w-full min-h-11 px-3 py-2 rounded-md border border-slate-300 bg-white text-sm text-slate-900";
@@ -269,28 +245,18 @@ export default function EventDetailPage() {
         backTo="/events"
         maxWidth="5xl"
         actions={
-          <button
-            type="button"
+          <RefreshButton
             onClick={() => {
               setLoading(true);
               void fetchData();
             }}
-            className="min-h-11 inline-flex items-center px-3 py-2 rounded-md text-xs font-medium bg-slate-800 text-white hover:bg-slate-900 transition-colors"
-          >
-            <IconRefresh className="w-3 h-3 mr-1" />
-            Refresh
-          </button>
+          />
         }
       />
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-6">
-        {loading && (
-          <div className="flex justify-center py-16">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-8 h-8 border-2 border-slate-800 border-t-transparent rounded-full animate-spin" />
-              <p className="text-sm text-slate-500">Loading event...</p>
-            </div>
-          </div>
+        {loading && !event && (
+          <PageSkeleton variant="rows" label="Loading event" />
         )}
 
         {error && (
@@ -308,7 +274,7 @@ export default function EventDetailPage() {
           </div>
         )}
 
-        {!loading && event && (
+        {event && (
           <>
             <div className="flex flex-wrap items-center gap-2">
               <span
@@ -511,212 +477,9 @@ export default function EventDetailPage() {
               />
             </div>
 
-            {event.excusesApplied && (
-              <section className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-                <div className="px-4 py-3 border-b border-slate-200">
-                  <h2 className="text-sm font-semibold text-slate-900">
-                    Prefects ({recordEntries.length}
-                    {query.trim() ? ` of ${event.entries?.length || 0}` : ""})
-                  </h2>
-                </div>
-                {recordEntries.length === 0 ? (
-                  <p className="p-6 text-sm text-slate-600">
-                    {query.trim()
-                      ? "No prefects match this search."
-                      : "No prefects on this record."}
-                  </p>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="bg-slate-50 border-b border-slate-200">
-                          <th className="text-left px-4 py-3 font-medium text-slate-600 hidden sm:table-cell">
-                            #
-                          </th>
-                          <th className="text-left px-4 py-3 font-medium text-slate-600">
-                            Prefect
-                          </th>
-                          <th className="text-left px-4 py-3 font-medium text-slate-600">
-                            Status
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {recordEntries.map((row, idx) => {
-                          const status = row.status || "Traitor";
-                          const isTraitor = status === "Traitor";
-                          const isExcused = isExcusedStatus(status);
-                          return (
-                            <tr
-                              key={row.prefectId}
-                              className={
-                                isTraitor ? "bg-red-50/60" : undefined
-                              }
-                            >
-                              <td className="px-4 py-3 font-mono text-slate-600 hidden sm:table-cell">
-                                {idx + 1}
-                              </td>
-                              <td className="px-4 py-3">
-                                <div className="flex items-center gap-3">
-                                  <div
-                                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${
-                                      isTraitor
-                                        ? "bg-red-100 text-red-700"
-                                        : "bg-slate-100 text-slate-600"
-                                    }`}
-                                  >
-                                    {avatarChar(row.name)}
-                                  </div>
-                                  <div>
-                                    <p
-                                      className={`font-medium ${
-                                        isTraitor
-                                          ? "text-red-800"
-                                          : "text-slate-900"
-                                      }`}
-                                    >
-                                      {row.name}
-                                    </p>
-                                    <p className="text-xs text-slate-600">
-                                      {[row.code, row.class]
-                                        .filter(Boolean)
-                                        .join(" · ") || "—"}
-                                      {status === "Present" && row.time
-                                        ? ` · ${formatClock(row.time)}`
-                                        : ""}
-                                    </p>
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="px-4 py-3">
-                                <span
-                                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
-                                    isTraitor
-                                      ? "bg-red-600 text-white border-red-700"
-                                      : isExcused
-                                        ? "bg-sky-100 text-sky-800 border-sky-200"
-                                        : GATE_STATUS_STYLES[status] ||
-                                          "bg-slate-100 text-slate-700 border-slate-200"
-                                  }`}
-                                >
-                                  {isExcused ? "Excused" : status}
-                                </span>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </section>
-            )}
+                        <EventRecordTable event={event} recordEntries={recordEntries} query={query} />
 
-            {!event.excusesApplied && (
-            <>
-            <section className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-              <div className="px-4 py-3 border-b border-slate-200">
-                <h2 className="text-sm font-semibold text-slate-900">
-                  Signed in ({present.length}
-                  {query.trim() ? ` of ${event.present.length}` : ""})
-                </h2>
-              </div>
-              {present.length === 0 ? (
-                <p className="p-6 text-sm text-slate-600">
-                  {event.attendanceSaved
-                    ? "No prefects scanned during this window."
-                    : "No prefects have scanned during this window yet."}
-                </p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-slate-50 border-b border-slate-200">
-                        <th className="text-left px-4 py-3 font-medium text-slate-600">
-                          Prefect
-                        </th>
-                        <th className="text-left px-4 py-3 font-medium text-slate-600 hidden sm:table-cell">
-                          PIN
-                        </th>
-                        <th className="text-left px-4 py-3 font-medium text-slate-600">
-                          Signed in
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {present.map((row) => (
-                        <tr key={row.prefectId}>
-                          <td className="px-4 py-3">
-                            <p className="font-medium text-slate-900">
-                              {row.name}
-                            </p>
-                            <p className="text-xs text-slate-600">
-                              {[row.code, row.class].filter(Boolean).join(" · ") ||
-                                "—"}
-                            </p>
-                          </td>
-                          <td className="px-4 py-3 hidden sm:table-cell font-mono text-slate-700">
-                            {row.pin}
-                          </td>
-                          <td className="px-4 py-3 font-mono text-slate-800">
-                            {row.time ? formatClock(row.time) : "—"}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </section>
-
-            <section className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-              <div className="px-4 py-3 border-b border-slate-200">
-                <h2 className="text-sm font-semibold text-slate-900">
-                  Not signed in ({absent.length}
-                  {query.trim() ? ` of ${event.absent.length}` : ""})
-                </h2>
-              </div>
-              {absent.length === 0 ? (
-                <p className="p-6 text-sm text-slate-600">
-                  Everyone on the roll has scanned.
-                </p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-slate-50 border-b border-slate-200">
-                        <th className="text-left px-4 py-3 font-medium text-slate-600">
-                          Prefect
-                        </th>
-                        <th className="text-left px-4 py-3 font-medium text-slate-600 hidden sm:table-cell">
-                          PIN
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {absent.map((row) => (
-                        <tr key={row.prefectId}>
-                          <td className="px-4 py-3">
-                            <p className="font-medium text-slate-900">
-                              {row.name}
-                            </p>
-                            <p className="text-xs text-slate-600">
-                              {[row.code, row.class].filter(Boolean).join(" · ") ||
-                                "—"}
-                            </p>
-                          </td>
-                          <td className="px-4 py-3 hidden sm:table-cell font-mono text-slate-700">
-                            {row.pin}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </section>
-            </>
-            )}
+            <EventRoster event={event} present={present} absent={absent} query={query} />
           </>
         )}
       </main>

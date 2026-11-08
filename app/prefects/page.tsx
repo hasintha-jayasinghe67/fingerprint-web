@@ -6,6 +6,7 @@ import { apiUrl } from "@/lib/api";
 import SiteHeader from "@/components/site-header";
 import Modal from "@/components/Modal";
 import { IconRefresh, IconClose } from "@/components/icons";
+import { PageSkeleton } from "@/components/ui/Skeleton";
 
 // -------------------------------------------------------
 // Types
@@ -241,10 +242,8 @@ export default function PrefectsPage() {
         )}
 
         {/* Loading */}
-        {loading && (
-          <div className="flex justify-center py-16">
-            <div className="w-6 h-6 border-2 border-slate-800 border-t-transparent rounded-full animate-spin" />
-          </div>
+        {loading && prefects.length === 0 && (
+          <PageSkeleton variant="rows" label="Loading prefects" />
         )}
 
         {/* Empty */}
@@ -273,7 +272,7 @@ export default function PrefectsPage() {
                 {prefects.length} Prefect{prefects.length !== 1 ? "s" : ""}
               </h2>
               <button
-                onClick={() => { setLoading(true); fetchPrefects(); }}
+                onClick={() => { void fetchPrefects(); }}
                 className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800 font-medium transition-colors"
               >
                 <IconRefresh className="w-3 h-3" />

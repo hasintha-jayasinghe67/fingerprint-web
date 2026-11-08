@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { apiUrl, readApiJson } from "@/lib/api";
 import { useAuth, isAdminOrAbove } from "@/lib/AuthContext";
 import SiteHeader from "@/components/site-header";
+import { PageSkeleton } from "@/components/ui/Skeleton";
 import { DEFAULT_GATE_STATUS } from "@/lib/gateStatuses";
 import GeneralAttendanceForm, {
   type GeneralPrefectEntry,
@@ -124,12 +125,7 @@ export default function NewGeneralAttendancePage() {
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {loading ? (
-          <div className="flex justify-center py-16">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-8 h-8 border-2 border-slate-800 border-t-transparent rounded-full animate-spin" />
-              <p className="text-sm text-slate-500">Loading prefects...</p>
-            </div>
-          </div>
+          <PageSkeleton variant="rows" label="Loading prefects" />
         ) : (
           <GeneralAttendanceForm
             name={name}

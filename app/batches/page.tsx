@@ -7,6 +7,7 @@ import { useAuth, isAdminOrAbove } from "@/lib/AuthContext";
 import SiteHeader from "@/components/site-header";
 import Modal from "@/components/Modal";
 import { IconClose, IconRefresh } from "@/components/icons";
+import { PageSkeleton } from "@/components/ui/Skeleton";
 
 interface Prefect {
   id: number;
@@ -231,10 +232,8 @@ export default function BatchesPage() {
           </div>
         )}
 
-        {loading && (
-          <div className="flex justify-center py-16">
-            <div className="w-6 h-6 border-2 border-slate-800 border-t-transparent rounded-full animate-spin" />
-          </div>
+        {loading && batches.length === 0 && (
+          <PageSkeleton variant="rows" label="Loading batches" />
         )}
 
         {!loading && batches.length === 0 && (
@@ -265,8 +264,7 @@ export default function BatchesPage() {
               </h2>
               <button
                 onClick={() => {
-                  setLoading(true);
-                  fetchAll();
+                  void fetchAll();
                 }}
                 className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800 font-medium transition-colors"
               >

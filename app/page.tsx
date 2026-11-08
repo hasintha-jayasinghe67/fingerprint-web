@@ -1,149 +1,38 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { apiUrl } from "@/lib/api";
 import { matchesSearch } from "@/lib/search";
+import { peekQuery, rememberQuery, useQuery } from "@/lib/useQuery";
+import {
+  formatClock,
+  formatColomboNow,
+  formatDateDisplay,
+  getTodaySriLankanDateISO,
+} from "@/lib/time";
 import { useAuth, isAdminOrAbove } from "@/lib/AuthContext";
 import SiteHeader from "@/components/site-header";
 import Modal from "@/components/Modal";
+import { DevicePanel } from "@/components/dashboard/DevicePanel";
+import { LiveLog } from "@/components/dashboard/LiveLog";
+import { PresenceDonut } from "@/components/dashboard/PresenceDonut";
+import { StatCard } from "@/components/dashboard/StatCard";
 import {
-  IconRefresh,
-  IconClose,
-  IconCheck,
-} from "@/components/icons";
+  eventIsLate,
+  getStatusLabel,
+  isMorningLate,
+  type AttendanceEvent,
+  type DeviceInfo,
+} from "@/components/dashboard/attendanceStatus";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
+import { RefreshButton } from "@/components/ui/RefreshButton";
+import { PageSkeleton, RefreshBar } from "@/components/ui/Skeleton";
+import { IconCheck } from "@/components/icons";
 
 // -------------------------------------------------------
 // Types
 // -------------------------------------------------------
-
-interface AttendanceEvent {
-  pin: string;
-  name: string | null;
-  timestamp: string;
-  status: string;
-  verifyMode: string;
-  verifyMethod: string;
-  workCode: string | null;
-  deviceSN: string;
-  /** Server-computed: morning late per gate-duty vs 07:00 rules. */
-  late?: boolean;
-  /** Was late, but excused on the spot for this day (late is then false). */
-  lateExcused?: boolean;
-  suspended?: boolean;
-  /** Morning cutoff (HH:MM:SS) that applied to this prefect; null outside the morning slot. */
-  deadline?: string | null;
-}
-
-interface DeviceInfo {
-  serialNumber: string;
-  lastSeen: string;
-  ip: string | null;
-}
-
-// -------------------------------------------------------
-// Helpers
-// -------------------------------------------------------
-
-/**
- * The K40 Pro sends timestamps already in Sri Lankan time (UTC+5:30)
- * as confirmed by the ADMS handshake TimeZone=5.5.
- * Format: "2026-08-30 18:06:47"
- *
- * We parse them directly — no timezone offset gymnastics needed.
- */
-
-function toSriLankanTime(timestamp: string): string {
-  const timePart = timestamp.split(" ")[1];
-  if (!timePart) return timestamp;
-  const [h, m, s] = timePart.split(":").map(Number);
-  const period = h >= 12 ? "PM" : "AM";
-  const displayH = h === 0 ? 12 : h > 12 ? h - 12 : h;
-  return `${displayH}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")} ${period}`;
-}
-
-/** "06:45:00" → "6:45 AM" */
-function toTimeNoSeconds(time: string): string {
-  const [h, m] = time.split(":").map(Number);
-  const period = h >= 12 ? "PM" : "AM";
-  const displayH = h === 0 ? 12 : h > 12 ? h - 12 : h;
-  return `${displayH}:${String(m).padStart(2, "0")} ${period}`;
-}
-
-function toSriLankanDate(timestamp: string): string {
-  const datePart = timestamp.split(" ")[0]?.split("T")[0];
-  if (!datePart) return timestamp;
-  const [y, m, d] = datePart.split("-");
-  const date = new Date(Number(y), Number(m) - 1, Number(d));
-  return date.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-}
-
-function getTodaySriLankanDateISO(): string {
-  const now = new Date();
-  const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
-  const slMs = utcMs + 5.5 * 3600000;
-  const slDate = new Date(slMs);
-  const y = slDate.getFullYear();
-  const m = String(slDate.getMonth() + 1).padStart(2, "0");
-  const d = String(slDate.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-function getStatusLabel(status: string): string {
-  switch (status) {
-    case "0":
-      return "Check In";
-    case "1":
-      return "Check Out";
-    case "2":
-      return "Break Out";
-    case "3":
-      return "Break In";
-    case "4":
-      return "Overtime In";
-    case "5":
-      return "Overtime Out";
-    default:
-      return `Status ${status}`;
-  }
-}
-
-/**
- * Fallback only if the API omits `late` (older server). Prefer event.late.
- * Without batch context, treat morning scans after 07:00 as late.
- */
-function isMorningLate(timePart: string): boolean {
-  if (!timePart) return false;
-  const t = timePart.length === 5 ? `${timePart}:00` : timePart;
-  return t < "11:00:00" && t > "07:00:00";
-}
-
-function getStatusColor(status: string): string {
-  switch (status) {
-    case "0":
-      return "bg-emerald-50 text-emerald-700 border-emerald-200";
-    case "1":
-      return "bg-amber-50 text-amber-700 border-amber-200";
-    case "2":
-      return "bg-sky-50 text-sky-700 border-sky-200";
-    case "3":
-      return "bg-slate-100 text-slate-700 border-slate-200";
-    default:
-      return "bg-slate-100 text-slate-600 border-slate-200";
-  }
-}
-
-function getVerifyLabel(method: string): string {
-  if (method.includes("Fingerprint")) return "Fingerprint";
-  if (method.includes("Card")) return "Card";
-  if (method.includes("Face")) return "Face";
-  if (method.includes("Password")) return "Password";
-  return method;
-}
 
 // -------------------------------------------------------
 // Main Component
@@ -152,17 +41,42 @@ function getVerifyLabel(method: string): string {
 export default function AttendancePage() {
   const { user } = useAuth();
   const canWrite = isAdminOrAbove(user);
-  const [events, setEvents] = useState<AttendanceEvent[]>([]);
-  const [totalPrefects, setTotalPrefects] = useState<number>(0);
-  const [prefectLookup, setPrefectLookup] = useState<
-    Record<string, { class: string | null; code: string | null }>
-  >({});
-  const [devices, setDevices] = useState<DeviceInfo[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const todayISO = getTodaySriLankanDateISO();
+
+  // Attendance and the device list arrive together. Class and code
+  // ride on each event, so this page no longer waits on /api/prefects.
+  const live = useQuery(`live:${todayISO}`, async () => {
+    const [attRes, devRes] = await Promise.all([
+      fetch(apiUrl(`/api/attendance?date=${todayISO}`)),
+      fetch(apiUrl("/api/devices")),
+    ]);
+    if (!attRes.ok) throw new Error("Failed to fetch attendance");
+    if (!devRes.ok) throw new Error("Failed to fetch devices");
+    const attData = await attRes.json();
+    const devData = await devRes.json();
+    const nextEvents = (Array.isArray(attData.events) ? attData.events : [])
+      .slice()
+      .sort((a: AttendanceEvent, b: AttendanceEvent) =>
+        a.timestamp.localeCompare(b.timestamp)
+      ) as AttendanceEvent[];
+    return {
+      events: nextEvents,
+      devices: (devData.devices || []) as DeviceInfo[],
+      prefectCount:
+        typeof attData.prefectCount === "number"
+          ? attData.prefectCount
+          : nextEvents.length,
+    };
+  });
+
+  const [events, setEvents] = useState<AttendanceEvent[]>(live.data?.events ?? []);
+  const [totalPrefects, setTotalPrefects] = useState<number>(live.data?.prefectCount ?? 0);
+  const [devices, setDevices] = useState<DeviceInfo[]>(live.data?.devices ?? []);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [serverTime, setServerTime] = useState<string>("");
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const loading = live.loading;
+  const error = live.error;
 
   // Notice / SMS dialog state
   const [noticeOpen, setNoticeOpen] = useState(false);
@@ -180,75 +94,41 @@ export default function AttendancePage() {
   const [excusingPin, setExcusingPin] = useState<string | null>(null);
   const [excuseError, setExcuseError] = useState<string | null>(null);
 
-  const todayISO = getTodaySriLankanDateISO();
-
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const [attRes, devRes, prefRes] = await Promise.all([
-        fetch(apiUrl(`/api/attendance?date=${todayISO}`)),
-        fetch(apiUrl("/api/devices")),
-        fetch(apiUrl("/api/prefects")),
-      ]);
-
-      if (!attRes.ok) throw new Error("Failed to fetch attendance");
-      if (!devRes.ok) throw new Error("Failed to fetch devices");
-
-      const attData = await attRes.json();
-      const devData = await devRes.json();
-      if (prefRes.ok) {
-        const prefData = await prefRes.json();
-        const prefects = Array.isArray(prefData.prefects) ? prefData.prefects : [];
-        const lookup: Record<string, { class: string | null; code: string | null }> = {};
-        for (const row of prefects) {
-          lookup[String(row.pin)] = {
-            class: row.class == null ? null : String(row.class),
-            code: row.code == null ? null : String(row.code),
-          };
-        }
-        setPrefectLookup(lookup);
-        setTotalPrefects(
-          typeof prefData.count === "number" ? prefData.count : prefects.length
-        );
-      }
-
-      // Sort by timestamp ascending
-      const sorted = attData.events.sort(
-        (a: AttendanceEvent, b: AttendanceEvent) =>
-          a.timestamp.localeCompare(b.timestamp)
-      );
-
-      setEvents(sorted);
-      setDevices(devData.devices);
-      setLastRefresh(new Date());
-      setServerTime(
-        new Date().toLocaleTimeString("en-US", {
-          timeZone: "Asia/Colombo",
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-          hour12: true,
-        })
-      );
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
-    } finally {
-      setLoading(false);
-    }
-  }, [todayISO]);
-
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (!live.data) return;
+    setEvents(live.data.events);
+    setDevices(live.data.devices);
+    setTotalPrefects(live.data.prefectCount);
+    setLastRefresh(new Date());
+  }, [live.data]);
 
-  // Auto-refresh every 10 seconds
+  // The clock ticks on its own. Reloading attendance does not reset it.
+  useEffect(() => {
+    const tick = () => setServerTime(formatColomboNow());
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Warm the dates list so opening Attendance feels instant.
+  useEffect(() => {
+    const key = apiUrl("/api/attendance/dates");
+    if (peekQuery(key)) return;
+    fetch(key)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) rememberQuery(key, data);
+      })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     if (!autoRefresh) return;
-    const interval = setInterval(fetchData, 10000);
+    const interval = setInterval(() => {
+      void live.reload();
+    }, 10000);
     return () => clearInterval(interval);
-  }, [autoRefresh, fetchData]);
+  }, [autoRefresh, live.reload]);
 
   async function handleClearCommandQueue() {
     if (
@@ -324,13 +204,6 @@ export default function AttendancePage() {
     ? Date.now() - new Date(device.lastSeen).getTime() < 90_000
     : false;
 
-  function eventIsLate(event: AttendanceEvent): boolean {
-    return (
-      event.late ??
-      isMorningLate(event.timestamp.split(" ")[1] || "")
-    );
-  }
-
   const latecomerCount = events.filter(eventIsLate).length;
   const displayedEvents = useMemo(() => {
     const base = showLatecomers
@@ -341,24 +214,23 @@ export default function AttendancePage() {
         )
       : events;
     return base.filter((event) => {
-      const prefect = prefectLookup[event.pin];
       const late =
         event.late ?? isMorningLate(event.timestamp.split(" ")[1] || "");
       return matchesSearch(
         query,
         event.name,
         event.pin,
-        prefect?.class,
-        prefect?.code,
+        event.class,
+        event.code,
         getStatusLabel(event.status),
-        toSriLankanTime(event.timestamp),
+        formatClock(event.timestamp),
         late ? "Late" : "",
         event.lateExcused ? "Late excused" : "",
         event.verifyMethod,
         event.deviceSN
       );
     });
-  }, [events, showLatecomers, query, prefectLookup]);
+  }, [events, showLatecomers, query]);
 
   return (
     <div className="min-h-screen">
@@ -436,13 +308,7 @@ export default function AttendancePage() {
               />
               Auto-refresh {autoRefresh ? "on" : "off"}
             </button>
-            <button
-              onClick={fetchData}
-              className="min-h-11 inline-flex items-center px-3 py-2 rounded-md text-xs font-medium bg-slate-800 text-white hover:bg-slate-900 transition-colors"
-            >
-              <IconRefresh className="w-3 h-3 mr-1" />
-              Refresh
-            </button>
+            <RefreshButton onClick={() => { void live.reload(); }} />
           </>
         }
       />
@@ -451,39 +317,28 @@ export default function AttendancePage() {
         {/* Date Banner */}
         <div className="mb-6">
           <h2 className="text-xl font-semibold tracking-tight text-slate-900">
-            {toSriLankanDate(
-              new Date().toISOString().replace("Z", "+0530")
-            )}
+            {formatDateDisplay(todayISO)}
           </h2>
           <p className="text-sm text-slate-500 mt-0.5">
             Today&apos;s attendance records
           </p>
         </div>
 
-        {/* Stats */}
+        <RefreshBar active={live.refreshing} />
+
+        {error && (
+          <ErrorBanner>
+            {error} — Make sure the ADMS server is running on port 8088.
+          </ErrorBanner>
+        )}
+
+        {loading && events.length === 0 ? (
+          <PageSkeleton variant="table" label="Loading today's attendance" />
+        ) : (
         <div className="mb-8 grid grid-cols-1 sm:grid-cols-[minmax(0,20rem)_minmax(0,24rem)] gap-4">
           <StatCard label="Number of prefects" value={prefectCount} />
           <PresenceDonut present={prefectCount} total={totalPrefects} />
         </div>
-
-        {/* Error */}
-        {error && (
-          <div role="alert" className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-            <strong>Error:</strong> {error} — Make sure the ADMS server is
-            running on port 8088.
-          </div>
-        )}
-
-        {/* Loading */}
-        {loading && events.length === 0 && (
-          <div className="flex items-center justify-center py-20" role="status">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-8 h-8 border-2 border-slate-800 border-t-transparent rounded-full animate-spin" />
-              <p className="text-sm text-slate-500">
-                Loading attendance data...
-              </p>
-            </div>
-          </div>
         )}
 
         {/* No records */}
@@ -504,301 +359,29 @@ export default function AttendancePage() {
           </div>
         )}
 
-        {/* Attendance Table */}
-        {events.length > 0 && (
-          <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-              <h3 className="font-semibold text-slate-800">
-                {query.trim()
-                  ? `${showLatecomers ? "Latecomers" : "Attendance log"} (${displayedEvents.length} of ${showLatecomers ? latecomerCount : events.length})`
-                  : showLatecomers
-                    ? `Latecomers (${displayedEvents.length})`
-                    : `Attendance log (${events.length} records)`}
-              </h3>
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowLatecomers((v) => !v)}
-                  className={`min-h-11 inline-flex items-center px-3 py-2 rounded-md text-xs font-medium border transition-colors ${
-                    showLatecomers
-                      ? "bg-red-50 text-red-700 border-red-200"
-                      : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-                  }`}
-                >
-                  {showLatecomers
-                    ? "Show all"
-                    : `Show latecomers${latecomerCount > 0 ? ` (${latecomerCount})` : ""}`}
-                </button>
-                {lastRefresh && (
-                  <p className="text-xs text-slate-600">
-                    Last updated:{" "}
-                    {lastRefresh.toLocaleTimeString("en-US", {
-                      timeZone: "Asia/Colombo",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      second: "2-digit",
-                      hour12: true,
-                    })}
-                  </p>
-                )}
-              </div>
-              </div>
-              <div>
-                <label htmlFor="today-attendance-search" className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Search attendance
-                </label>
-                <input
-                  id="today-attendance-search"
-                  type="search"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Name, class, code, or PIN"
-                  aria-label="Search today's attendance log"
-                  className="w-full min-h-11 px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-base text-slate-900 placeholder:text-slate-600"
-                />
-              </div>
-            </div>
-            {excuseError && (
-              <div role="alert" className="px-6 py-3 text-sm border-b bg-red-50 border-red-100 text-red-700">
-                {excuseError}
-                <button type="button" onClick={() => setExcuseError(null)} className="ml-2 min-h-11 min-w-11 inline-flex items-center justify-center rounded-md" aria-label="Dismiss">
-                  <IconClose className="w-4 h-4" />
-                </button>
-              </div>
-            )}
-            {displayedEvents.length === 0 ? (
-              <div className="px-6 py-12 text-center">
-                <p className="text-sm font-medium text-slate-700">
-                  {query.trim()
-                    ? "No matching records"
-                    : showLatecomers
-                      ? "No latecomers today"
-                      : "No attendance records today"}
-                </p>
-                <p className="text-xs text-slate-500 mt-1">
-                  {query.trim()
-                    ? `Nothing in today's log matches “${query.trim()}”.`
-                    : showLatecomers
-                      ? "Every morning sign-in so far was on time."
-                      : "Waiting for fingerprint scans."}
-                </p>
-              </div>
-            ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200">
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 hidden md:table-cell">
-                      #
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
-                      User
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
-                      Time (SL)
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 hidden lg:table-cell">
-                      Verification
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 hidden lg:table-cell">
-                      Device SN
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {displayedEvents.map((event, idx) => (
-                    <tr
-                      key={`${event.pin}-${event.timestamp}-${idx}`}
-                      className={`transition-colors ${
-                        event.suspended && eventIsLate(event)
-                          ? "bg-violet-50/70 hover:bg-violet-50"
-                          : "hover:bg-slate-50/50"
-                      }`}
-                    >
-                      <td className="px-6 py-3.5 text-sm text-slate-600 font-mono hidden md:table-cell">
-                        {idx + 1}
-                      </td>
-                      <td className="px-6 py-3.5">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-600 text-xs font-semibold">
-                            {event.name
-                              ? event.name.charAt(0).toUpperCase()
-                              : event.pin.slice(-2)}
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-slate-800">
-                              {event.name || `User ${event.pin}`}
-                            </p>
-                            <p className="text-xs text-slate-600 font-mono">
-                              PIN: {event.pin}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-3.5">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`text-sm font-mono font-medium ${
-                              event.suspended && eventIsLate(event)
-                                ? "text-violet-700"
-                                : "text-slate-700"
-                            }`}
-                          >
-                            {toSriLankanTime(event.timestamp)}
-                          </span>
-                          {eventIsLate(event) &&
-                            (event.suspended ? (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-violet-600 text-white">
-                                SUSPENDED · LATE
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-600 text-white">
-                                LATE
-                              </span>
-                            ))}
-                          {eventIsLate(event) && canWrite && (
-                            <button
-                              type="button"
-                              onClick={() => handleLateExcusal(event, true)}
-                              disabled={excusingPin === event.pin}
-                              aria-label={`Excuse ${event.name || event.pin}`}
-                              title="Excused on the spot: remove the late mark for today"
-                              className="min-h-11 inline-flex items-center px-3 rounded-md text-xs font-medium bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 transition-colors disabled:opacity-50"
-                            >
-                              {excusingPin === event.pin ? "..." : "Excuse"}
-                            </button>
-                          )}
-                          {event.lateExcused && (
-                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
-                              LATE EXCUSED
-                              {canWrite && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleLateExcusal(event, false)}
-                                  disabled={excusingPin === event.pin}
-                                  aria-label={`Undo excuse for ${event.name || event.pin}`}
-                                  className="min-h-11 inline-flex items-center px-2 font-medium text-slate-700 underline hover:text-slate-900 disabled:opacity-50"
-                                >
-                                  {excusingPin === event.pin ? "..." : "Undo"}
-                                </button>
-                              )}
-                            </span>
-                          )}
-                        </div>
-                        {event.suspended && event.deadline && (
-                          <p className="text-xs text-violet-600 mt-0.5">
-                            Suspended · due by {toTimeNoSeconds(event.deadline)}
-                          </p>
-                        )}
-                      </td>
-                      <td className="px-6 py-3.5">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusColor(event.status)}`}
-                        >
-                          {getStatusLabel(event.status)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-3.5 hidden lg:table-cell">
-                        <span className="inline-flex items-center gap-1.5 text-sm text-slate-600">
-                          {getVerifyLabel(event.verifyMethod)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-3.5 text-xs text-slate-600 font-mono hidden lg:table-cell">
-                        {event.deviceSN}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            )}
-          </div>
-        )}
+        <LiveLog
+          events={events}
+          displayedEvents={displayedEvents}
+          query={query}
+          setQuery={setQuery}
+          showLatecomers={showLatecomers}
+          setShowLatecomers={setShowLatecomers}
+          latecomerCount={latecomerCount}
+          lastRefresh={lastRefresh}
+          excuseError={excuseError}
+          setExcuseError={setExcuseError}
+          canWrite={canWrite}
+          excusingPin={excusingPin}
+          handleLateExcusal={handleLateExcusal}
+        />
 
-        {/* Devices Section */}
-        {(devices.length > 0 || canWrite) && (
-          <div className="mt-8 bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
-              <h3 className="font-semibold text-slate-800">
-                Connected devices ({devices.length})
-              </h3>
-              {canWrite && (
-                <button
-                  type="button"
-                  onClick={handleClearCommandQueue}
-                  disabled={clearingQueue}
-                  className="min-h-11 inline-flex items-center px-3 py-2 rounded-md text-xs font-medium border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-colors"
-                >
-                  {clearingQueue ? "Clearing…" : "Clear command queue"}
-                </button>
-              )}
-            </div>
-            {queueFeedback && (
-              <div
-                role={queueFeedback.ok ? "status" : "alert"}
-                className={`px-6 py-3 text-sm border-b ${
-                  queueFeedback.ok
-                    ? "bg-emerald-50 border-emerald-100 text-emerald-800"
-                    : "bg-red-50 border-red-100 text-red-700"
-                }`}
-              >
-                {queueFeedback.msg}
-              </div>
-            )}
-            <div className="p-6">
-              {devices.length === 0 ? (
-                <p className="text-sm text-slate-500">
-                  No device has polled yet. Clearing the queue still drops any
-                  commands waiting in memory.
-                </p>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {devices.map((device) => (
-                    <div
-                      key={device.serialNumber}
-                      className="border border-slate-200 rounded-lg p-4 hover:border-slate-300 transition-colors"
-                    >
-                      <div className="flex items-center gap-2.5 mb-3">
-                        <span className="w-2 h-2 bg-emerald-500 rounded-full" />
-                        <span className="text-sm font-medium text-slate-700">
-                          ZKTeco K40 Pro
-                        </span>
-                      </div>
-                      <div className="space-y-1.5 text-xs text-slate-500">
-                        <p>
-                          <span className="font-medium">Serial:</span>{" "}
-                          <span className="font-mono">
-                            {device.serialNumber}
-                          </span>
-                        </p>
-                        {device.ip && (
-                          <p>
-                            <span className="font-medium">IP:</span>{" "}
-                            <span className="font-mono">{device.ip}</span>
-                          </p>
-                        )}
-                        <p>
-                          <span className="font-medium">Last seen:</span>{" "}
-                          {new Date(device.lastSeen).toLocaleString("en-US", {
-                            timeZone: "Asia/Colombo",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            second: "2-digit",
-                            hour12: true,
-                          })}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+        <DevicePanel
+          devices={devices}
+          canWrite={canWrite}
+          clearingQueue={clearingQueue}
+          handleClearCommandQueue={handleClearCommandQueue}
+          queueFeedback={queueFeedback}
+        />
 
         <Modal
           isOpen={noticeOpen}
@@ -924,92 +507,6 @@ export default function AttendancePage() {
           </div>
         </div>
       </main>
-    </div>
-  );
-}
-
-// -------------------------------------------------------
-// Stat Card Component
-// -------------------------------------------------------
-
-function StatCard({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm">
-      <span className="text-xs text-slate-500">{label}</span>
-      <p className="text-2xl font-semibold text-slate-900 mt-1">{value}</p>
-    </div>
-  );
-}
-
-// -------------------------------------------------------
-// Presence Donut (present today vs. total prefects)
-// -------------------------------------------------------
-
-function PresenceDonut({ present, total }: { present: number; total: number }) {
-  const size = 96;
-  const stroke = 12;
-  const radius = (size - stroke) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const safeTotal = Math.max(total, 0);
-  const safePresent = Math.min(Math.max(present, 0), safeTotal || present);
-  const ratio = safeTotal > 0 ? safePresent / safeTotal : 0;
-  const dash = circumference * ratio;
-  const percent = safeTotal > 0 ? Math.round(ratio * 100) : 0;
-  const absent = Math.max(safeTotal - safePresent, 0);
-
-  return (
-    <div
-      className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm flex items-center gap-4"
-      role="img"
-      aria-label={`${safePresent} of ${safeTotal} prefects present today (${percent}%)`}
-    >
-      <svg
-        width={size}
-        height={size}
-        viewBox={`0 0 ${size} ${size}`}
-        className="shrink-0 -rotate-90"
-        aria-hidden="true"
-      >
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="#e2e8f0"
-          strokeWidth={stroke}
-        />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="#8f5413"
-          strokeWidth={stroke}
-          strokeLinecap={dash > 0 && dash < circumference ? "round" : "butt"}
-          strokeDasharray={`${dash} ${circumference - dash}`}
-          className="transition-[stroke-dasharray] duration-500 ease-out"
-        />
-      </svg>
-      <div className="min-w-0">
-        <span className="text-xs text-slate-500">Present today</span>
-        <p className="text-2xl font-semibold text-slate-900 mt-1 leading-none">
-          {percent}%
-        </p>
-        <p className="text-sm text-slate-600 mt-1.5">
-          <span className="font-medium text-slate-900">{safePresent}</span> of{" "}
-          <span className="font-medium text-slate-900">{safeTotal}</span> prefects
-        </p>
-        <div className="flex items-center gap-3 mt-2 text-xs text-slate-500">
-          <span className="inline-flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-brand-700" />
-            Present {safePresent}
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-slate-200" />
-            Not yet {absent}
-          </span>
-        </div>
-      </div>
     </div>
   );
 }

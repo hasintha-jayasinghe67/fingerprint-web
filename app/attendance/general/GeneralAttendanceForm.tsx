@@ -3,16 +3,9 @@
 import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { matchesSearch } from "@/lib/search";
-import {
-  DEFAULT_GATE_STATUS,
-  GATE_STATUSES,
-  GATE_STATUS_STYLES,
-} from "@/lib/gateStatuses";
-import {
-  avatarChar,
-  isExcusedStatus,
-  matchPrefectList,
-} from "./helpers";
+import { isExcusedStatus, matchPrefectList } from "./helpers";
+import { ManualStatusList } from "./ManualStatusList";
+import { PasteLists } from "./PasteLists";
 
 export interface GeneralPrefectEntry {
   prefectId: number;
@@ -25,27 +18,6 @@ export interface GeneralPrefectEntry {
 
 export type GeneralAttendanceTab = "manual" | "paste";
 export type StatusListTab = "all" | "traitors" | "excused" | "present";
-
-const STATUS_LIST_TABS: { id: StatusListTab; label: string }[] = [
-  { id: "all", label: "All" },
-  { id: "traitors", label: "Traitors" },
-  { id: "excused", label: "Excused" },
-  { id: "present", label: "Present" },
-];
-
-const STATUS_LIST_HINT: Record<StatusListTab, string> = {
-  all: "Mark each prefect with the same statuses used for gate attendance.",
-  traitors: "Prefects marked Traitor on this record.",
-  excused: "Prefects marked excused (EG, ES, or Excused).",
-  present: "Prefects marked Present on this record.",
-};
-
-const STATUS_LIST_EMPTY: Record<StatusListTab, string> = {
-  all: "No prefects registered yet. Add house prefects first.",
-  traitors: "No traitors marked on this record.",
-  excused: "No excused prefects on this record.",
-  present: "No prefects marked Present on this record.",
-};
 
 function matchesStatusListTab(status: string, tab: StatusListTab): boolean {
   if (tab === "all") return true;
@@ -305,331 +277,30 @@ export default function GeneralAttendanceForm({
       </div>
 
       {activeTab === "paste" && canWrite ? (
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h3 className="font-semibold text-slate-800">
-                Paste excused &amp; present lists
-              </h3>
-              <p className="text-sm text-slate-500 mt-1">
-                Paste one code, full name, surname, or PIN per line (commas also
-                work). Any prefect not in the present or excused list will be
-                marked as <strong className="text-red-700">Traitor</strong> when
-                saved.
-              </p>
-            </div>
-            {(presentList.trim() || excusedList.trim()) && (
-              <button
-                type="button"
-                onClick={() => {
-                  setPresentList("");
-                  setExcusedList("");
-                  setPasteTouched(true);
-                }}
-                className="min-h-11 px-3 py-2 rounded-md text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors"
-              >
-                Clear lists
-              </button>
-            )}
-          </div>
-
-          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between">
-                <label
-                  htmlFor="general-excused-list"
-                  className="text-sm font-medium text-slate-700"
-                >
-                  Excused list
-                </label>
-                <span className="text-xs font-medium text-sky-700 bg-sky-50 border border-sky-200 px-2 py-0.5 rounded-full">
-                  {pastePreview.excusedCount} matched
-                </span>
-              </div>
-              <textarea
-                id="general-excused-list"
-                ref={excusedTextareaRef}
-                rows={10}
-                value={excusedList}
-                onChange={(e) => {
-                  setExcusedList(e.target.value);
-                  setPasteTouched(true);
-                }}
-                placeholder={
-                  "Paste excused prefects here…\nOne code, name, or PIN per line"
-                }
-                className="w-full px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 text-sm font-mono placeholder:text-slate-500 resize-y min-h-[12rem]"
-              />
-              {pastePreview.excusedMatch.unmatchedTokens.length > 0 && (
-                <p className="text-xs text-amber-700 mt-1">
-                  Unmatched in excused list:{" "}
-                  <span className="font-mono">
-                    {pastePreview.excusedMatch.unmatchedTokens
-                      .slice(0, 6)
-                      .join(", ")}
-                    {pastePreview.excusedMatch.unmatchedTokens.length > 6
-                      ? "…"
-                      : ""}
-                  </span>
-                </p>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between">
-                <label
-                  htmlFor="general-present-list"
-                  className="text-sm font-medium text-slate-700"
-                >
-                  Present list
-                </label>
-                <span className="text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-                  {pastePreview.presentCount} matched
-                </span>
-              </div>
-              <textarea
-                id="general-present-list"
-                ref={presentTextareaRef}
-                rows={10}
-                value={presentList}
-                onChange={(e) => {
-                  setPresentList(e.target.value);
-                  setPasteTouched(true);
-                }}
-                placeholder={
-                  "Paste present prefects here…\nOne code, name, or PIN per line"
-                }
-                className="w-full px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 text-sm font-mono placeholder:text-slate-500 resize-y min-h-[12rem]"
-              />
-              {pastePreview.presentMatch.unmatchedTokens.length > 0 && (
-                <p className="text-xs text-amber-700 mt-1">
-                  Unmatched in present list:{" "}
-                  <span className="font-mono">
-                    {pastePreview.presentMatch.unmatchedTokens
-                      .slice(0, 6)
-                      .join(", ")}
-                    {pastePreview.presentMatch.unmatchedTokens.length > 6
-                      ? "…"
-                      : ""}
-                  </span>
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex flex-wrap items-center gap-4 text-xs">
-            <span className="inline-flex items-center gap-1.5 font-medium text-emerald-700">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-600" />
-              Present: {pastePreview.presentCount}
-            </span>
-            <span className="inline-flex items-center gap-1.5 font-medium text-sky-700">
-              <span className="w-2.5 h-2.5 rounded-full bg-sky-600" />
-              Excused: {pastePreview.excusedCount}
-            </span>
-            <span className="inline-flex items-center gap-1.5 font-medium text-red-700">
-              <span className="w-2.5 h-2.5 rounded-full bg-red-600" />
-              Traitors (remaining): {pastePreview.traitorCount}
-            </span>
-          </div>
-        </div>
+        <PasteLists
+          presentList={presentList}
+          setPresentList={setPresentList}
+          excusedList={excusedList}
+          setExcusedList={setExcusedList}
+          setPasteTouched={setPasteTouched}
+          presentTextareaRef={presentTextareaRef}
+          excusedTextareaRef={excusedTextareaRef}
+          pastePreview={pastePreview}
+        />
       ) : (
-        <div className="space-y-3">
-          {entries.length > 0 && (
-          <div
-            className="flex gap-2 overflow-x-auto pb-1"
-            aria-label="Attendance status lists"
-          >
-            {STATUS_LIST_TABS.map((tab) => {
-              const active = statusListTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => setStatusListTab(tab.id)}
-                  className={`shrink-0 min-h-11 px-4 sm:px-5 py-2.5 rounded-md text-sm font-semibold transition-colors ${
-                    active
-                      ? "bg-slate-800 text-white"
-                      : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
-                  }`}
-                >
-                  {tab.label}
-                  <span
-                    className={`ml-1.5 text-xs font-medium ${
-                      active ? "text-white" : "text-slate-600"
-                    }`}
-                  >
-                    {statusCounts[tab.id]}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h3 className="font-semibold text-slate-800">
-                House prefects (
-                {query.trim()
-                  ? `${visibleEntries.length} of ${statusCounts[statusListTab]}`
-                  : statusCounts[statusListTab]}
-                )
-              </h3>
-              <p className="text-sm text-slate-600 mt-1">
-                {STATUS_LIST_HINT[statusListTab]}
-              </p>
-            </div>
-            {entries.length > 0 && (
-              <input
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search by name, class, code or PIN…"
-                aria-label="Search prefects in this attendance record"
-                className="w-full sm:max-w-xs px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 text-sm"
-              />
-            )}
-          </div>
-
-          {entries.length === 0 ? (
-            <div className="px-6 py-10 text-sm text-slate-600 text-center">
-              {STATUS_LIST_EMPTY.all}
-            </div>
-          ) : visibleEntries.length === 0 ? (
-            <div className="px-6 py-10 text-sm text-slate-600 text-center">
-              {query.trim()
-                ? `No prefects match “${query.trim()}”.`
-                : STATUS_LIST_EMPTY[statusListTab]}
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200">
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 hidden sm:table-cell">
-                      #
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
-                      Prefect
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
-                      {canWrite ? "Mark status" : "Status"}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {visibleEntries.map((entry, idx) => {
-                    const value = entry.status || DEFAULT_GATE_STATUS;
-                    const isTraitor = value === "Traitor";
-                    const isExcused = isExcusedStatus(value);
-                    return (
-                      <tr
-                        key={entry.prefectId}
-                        className={`transition-colors ${
-                          isTraitor
-                            ? "bg-red-50/60 hover:bg-red-50"
-                            : "hover:bg-slate-50/50"
-                        }`}
-                      >
-                        <td className="px-6 py-3 text-sm text-slate-600 font-mono hidden sm:table-cell">
-                          {idx + 1}
-                        </td>
-                        <td className="px-6 py-3">
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${
-                                isTraitor
-                                  ? "bg-red-100 text-red-700"
-                                  : "bg-slate-100 text-slate-600"
-                              }`}
-                            >
-                              {avatarChar(entry.name)}
-                            </div>
-                            <div>
-                              <p
-                                className={`text-sm font-medium ${
-                                  isTraitor ? "text-red-800" : "text-slate-800"
-                                }`}
-                              >
-                                {entry.name}
-                              </p>
-                              <p className="text-xs text-slate-600">
-                                {entry.class && (
-                                  <span className="mr-2 font-medium text-slate-500">
-                                    {entry.class}
-                                  </span>
-                                )}
-                                <span className="font-mono">PIN: {entry.pin}</span>
-                                {entry.code && (
-                                  <span className="ml-2 font-mono">
-                                    Code: {entry.code}
-                                  </span>
-                                )}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-3">
-                          {canWrite ? (
-                            <div className="flex flex-wrap items-center gap-2">
-                              <select
-                                value={value}
-                                onChange={(e) =>
-                                  onStatusChange(entry.prefectId, e.target.value)
-                                }
-                                className={`px-3 py-2 rounded-md border text-sm font-medium transition-colors ${
-                                  isTraitor
-                                    ? "bg-red-50 text-red-700 border-red-300 font-semibold"
-                                    : isExcused
-                                      ? "bg-sky-50 text-sky-700 border-sky-200"
-                                      : GATE_STATUS_STYLES[value] ||
-                                        "bg-white border-slate-300 text-slate-700"
-                                }`}
-                              >
-                                {GATE_STATUSES.map((status) => (
-                                  <option key={status} value={status}>
-                                    {status}
-                                  </option>
-                                ))}
-                              </select>
-                              {isTraitor && (
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-600 text-white">
-                                  Traitor
-                                </span>
-                              )}
-                              {isExcused && (
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800 border border-sky-200">
-                                  Excused
-                                </span>
-                              )}
-                            </div>
-                          ) : (
-                            <span
-                              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${
-                                isTraitor
-                                  ? "bg-red-600 text-white border-red-700 font-semibold"
-                                  : isExcused
-                                    ? "bg-sky-50 text-sky-700 border-sky-200"
-                                    : GATE_STATUS_STYLES[value] ||
-                                      "bg-slate-100 text-slate-700 border-slate-200"
-                              }`}
-                            >
-                              {isExcused ? `Excused (${value})` : value}
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-        </div>
+        <ManualStatusList
+          entries={entries}
+          visibleEntries={visibleEntries}
+          statusListTab={statusListTab}
+          setStatusListTab={setStatusListTab}
+          statusCounts={statusCounts}
+          query={query}
+          setQuery={setQuery}
+          canWrite={canWrite}
+          onStatusChange={onStatusChange}
+        />
       )}
+
 
       <div className="flex flex-wrap gap-3">
         {canWrite && (
