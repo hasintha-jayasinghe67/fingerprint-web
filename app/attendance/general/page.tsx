@@ -7,7 +7,6 @@ import { matchesSearch } from "@/lib/search";
 import { useAuth, isAdminOrAbove } from "@/lib/AuthContext";
 import SiteHeader from "@/components/site-header";
 import { IconArrowRight, IconRefresh } from "@/components/icons";
-import { PageSkeleton } from "@/components/ui/Skeleton";
 import { formatDateDisplay } from "./helpers";
 
 interface GeneralAttendanceSummary {
@@ -28,6 +27,7 @@ export default function GeneralAttendanceListPage() {
 
   const fetchData = useCallback(async () => {
     try {
+      setLoading(true);
       setError(null);
 
       const res = await fetch(apiUrl("/api/general-attendance"));
@@ -81,7 +81,8 @@ export default function GeneralAttendanceListPage() {
             )}
             <button
               onClick={() => {
-                void fetchData();
+                setLoading(true);
+                fetchData();
               }}
               className="min-h-11 inline-flex items-center px-3 py-2 rounded-md text-xs font-medium bg-slate-800 text-white hover:bg-slate-900 transition-colors"
             >
@@ -93,8 +94,15 @@ export default function GeneralAttendanceListPage() {
       />
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {loading && records.length === 0 && (
-          <PageSkeleton variant="cards" label="Loading general attendance" />
+        {loading && (
+          <div className="flex justify-center py-16">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-8 h-8 border-2 border-slate-800 border-t-transparent rounded-full animate-spin" />
+              <p className="text-sm text-slate-500">
+                Loading general attendance...
+              </p>
+            </div>
+          </div>
         )}
 
         {error && (
@@ -125,7 +133,7 @@ export default function GeneralAttendanceListPage() {
           </div>
         )}
 
-        {records.length > 0 && (
+        {!loading && records.length > 0 && (
           <div>
             <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="text-lg font-semibold tracking-tight text-slate-800">

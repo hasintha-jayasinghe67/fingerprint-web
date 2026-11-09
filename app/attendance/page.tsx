@@ -1,17 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { apiUrl } from "@/lib/api";
 import { matchesSearch } from "@/lib/search";
-import { formatDateDisplay, relativeDayLabel } from "@/lib/time";
-import { useQuery } from "@/lib/useQuery";
 import SiteHeader from "@/components/site-header";
-import { ErrorBanner } from "@/components/ui/ErrorBanner";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { SearchField } from "@/components/ui/SearchField";
-import { PageSkeleton, RefreshBar } from "@/components/ui/Skeleton";
 import { IconRefresh, IconArrowRight, IconCheck } from "@/components/icons";
+
+// -------------------------------------------------------
+// Types
+// -------------------------------------------------------
 
 interface AttendanceDate {
   date: string;
@@ -20,33 +18,87 @@ interface AttendanceDate {
   hasGate: boolean;
 }
 
-const DATES_URL = apiUrl("/api/attendance/dates");
+// -------------------------------------------------------
+// Helpers
+// -------------------------------------------------------
+
+function formatDateDisplay(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  return date.toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+function getTodaySriLankanDateISO(): string {
+  const now = new Date();
+  const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+  const slMs = utcMs + 5.5 * 3600000;
+  const slDate = new Date(slMs);
+  const y = slDate.getFullYear();
+  const m = String(slDate.getMonth() + 1).padStart(2, "0");
+  const d = String(slDate.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function getRelativeLabel(dateStr: string): string {
+  const today = getTodaySriLankanDateISO();
+  if (dateStr === today) return "Today";
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const utcMs = yesterday.getTime() + yesterday.getTimezoneOffset() * 60000;
+  const slMs = utcMs + 5.5 * 3600000;
+  const slDate = new Date(slMs);
+  const y = slDate.getFullYear();
+  const m = String(slDate.getMonth() + 1).padStart(2, "0");
+  const d = String(slDate.getDate()).padStart(2, "0");
+  if (dateStr === `${y}-${m}-${d}`) return "Yesterday";
+  return "";
+}
+
+// -------------------------------------------------------
+// Main Component
+// -------------------------------------------------------
 
 export default function AttendanceDatesPage() {
+  const [dates, setDates] = useState<AttendanceDate[]>([]);
   const [query, setQuery] = useState("");
-  // Same cache key the dashboard prefetches, so this list is often
-  // already here when the page opens.
-  const { data, error, loading, refreshing, reload } = useQuery(
-    DATES_URL,
-    async () => {
-      const res = await fetch(DATES_URL);
-      if (!res.ok) throw new Error("Failed to fetch attendance dates");
-      const json = await res.json();
-      return (json.dates || []) as AttendanceDate[];
-    }
-  );
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const dates = data ?? [];
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const res = await fetch(apiUrl("/api/attendance/dates"));
+      if (!res.ok) throw new Error("Failed to fetch attendance dates");
+
+      const data = await res.json();
+      setDates(data.dates);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const filteredDates = useMemo(() => {
-    return dates.filter((day) =>
+    return dates.filter((d) =>
       matchesSearch(
         query,
-        day.date,
-        formatDateDisplay(day.date),
-        relativeDayLabel(day.date),
-        String(day.prefectCount),
-        String(day.totalRecords)
+        d.date,
+        formatDateDisplay(d.date),
+        getRelativeLabel(d.date),
+        String(d.prefectCount),
+        String(d.totalRecords)
       )
     );
   }, [dates, query]);
@@ -73,7 +125,8 @@ export default function AttendanceDatesPage() {
             </Link>
             <button
               onClick={() => {
-                void reload();
+                setLoading(true);
+                fetchData();
               }}
               className="min-h-11 inline-flex items-center px-3 py-2 rounded-md text-xs font-medium bg-slate-800 text-white hover:bg-slate-900 transition-colors"
             >
@@ -85,96 +138,123 @@ export default function AttendanceDatesPage() {
       />
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <RefreshBar active={refreshing} />
-
-        {loading && <PageSkeleton variant="cards" label="Loading attendance dates" />}
-
-        {error && <ErrorBanner>{error}</ErrorBanner>}
-
-        {!loading && !error && dates.length === 0 && (
-          <EmptyState title="No attendance records yet">
-            Once house prefects begin scanning their fingerprints, dates with
-            attendance will appear here.
-          </EmptyState>
+        {/* Loading */}
+        {loading && (
+          <div className="flex justify-center py-16">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-8 h-8 border-2 border-slate-800 border-t-transparent rounded-full animate-spin" />
+              <p className="text-sm text-slate-500">
+                Loading attendance dates...
+              </p>
+            </div>
+          </div>
         )}
 
-        {dates.length > 0 && (
+        {/* Error */}
+        {error && (
+          <div role="alert" className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            <strong>Error:</strong> {error}
+          </div>
+        )}
+
+        {/* Empty */}
+        {!loading && !error && dates.length === 0 && (
+          <div className="flex items-center justify-center py-20">
+            <div className="flex flex-col items-center gap-3 text-center">
+              <h3 className="text-lg font-semibold text-slate-700">
+                No attendance records yet
+              </h3>
+              <p className="text-sm text-slate-500 max-w-md">
+                Once house prefects begin scanning their fingerprints, dates
+                with attendance will appear here.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Date Cards */}
+        {!loading && dates.length > 0 && (
           <div>
-            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="text-lg font-semibold tracking-tight text-slate-800">
                 {query.trim()
                   ? `${filteredDates.length} of ${dates.length} day${dates.length !== 1 ? "s" : ""}`
                   : `${dates.length} Day${dates.length !== 1 ? "s" : ""} with Attendance`}
               </h2>
-              <SearchField
-                id="attendance-date-search"
-                label="Search by date"
+              <input
+                type="search"
                 value={query}
-                onChange={setQuery}
+                onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search by date…"
-                className="w-full sm:max-w-xs"
+                aria-label="Search attendance dates"
+                className="w-full sm:max-w-xs px-3.5 py-2.5 rounded-md border border-slate-300 bg-white text-slate-900 text-sm"
               />
             </div>
 
             {filteredDates.length === 0 ? (
-              <EmptyState title="No matching days">
-                No fingerprint attendance days match “{query.trim()}”.
-              </EmptyState>
+              <div className="bg-white rounded-lg border border-slate-200 p-10 text-center">
+                <h3 className="text-lg font-semibold text-slate-700">
+                  No matching days
+                </h3>
+                <p className="text-sm text-slate-500 mt-1">
+                  No fingerprint attendance days match “{query.trim()}”.
+                </p>
+              </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredDates.map((day) => {
-                  const relativeLabel = relativeDayLabel(day.date);
-                  return (
-                    <Link
-                      key={day.date}
-                      href={`/attendance/${day.date}`}
-                      className="group bg-white rounded-lg border border-slate-200 p-5 hover:border-slate-300 hover:shadow-md transition-all"
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <h3 className="text-base font-semibold text-slate-800 group-hover:text-brand-700 transition-colors">
-                            {formatDateDisplay(day.date)}
-                          </h3>
-                          {relativeLabel && (
-                            <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
-                              {relativeLabel}
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-slate-500 group-hover:text-brand-800 transition-colors">
-                          <IconArrowRight className="w-4 h-4" />
-                        </span>
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-4 text-sm">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-semibold text-slate-700">
-                            {day.prefectCount}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredDates.map((d) => {
+                const relativeLabel = getRelativeLabel(d.date);
+                return (
+                  <Link
+                    key={d.date}
+                    href={`/attendance/${d.date}`}
+                    className="group bg-white rounded-lg border border-slate-200 p-5 hover:border-slate-300 hover:shadow-md transition-all"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h3 className="text-base font-semibold text-slate-800 group-hover:text-brand-700 transition-colors">
+                          {formatDateDisplay(d.date)}
+                        </h3>
+                        {relativeLabel && (
+                          <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+                            {relativeLabel}
                           </span>
-                          <span className="text-slate-500">
-                            prefect{day.prefectCount !== 1 ? "s" : ""}
-                          </span>
-                        </div>
-                        {day.totalRecords > 0 ? (
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-semibold text-slate-700">
-                              {day.totalRecords}
-                            </span>
-                            <span className="text-slate-500">scans</span>
-                          </div>
-                        ) : (
-                          day.hasGate && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                              <IconCheck className="w-3 h-3" />
-                              Gate record saved
-                            </span>
-                          )
                         )}
                       </div>
-                    </Link>
-                  );
-                })}
-              </div>
+                      <span className="text-slate-500 group-hover:text-brand-800 transition-colors">
+                        <IconArrowRight className="w-4 h-4" />
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-4 text-sm">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-semibold text-slate-700">
+                          {d.prefectCount}
+                        </span>
+                        <span className="text-slate-500">
+                          prefect{d.prefectCount !== 1 ? "s" : ""}
+                        </span>
+                      </div>
+                      {d.totalRecords > 0 ? (
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-semibold text-slate-700">
+                            {d.totalRecords}
+                          </span>
+                          <span className="text-slate-500">scans</span>
+                        </div>
+                      ) : (
+                        d.hasGate && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <IconCheck className="w-3 h-3" />
+                            Gate record saved
+                          </span>
+                        )
+                      )}
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
             )}
           </div>
         )}
