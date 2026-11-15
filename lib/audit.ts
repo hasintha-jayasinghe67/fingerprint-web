@@ -185,7 +185,7 @@ export function classifyWrite(
     return rule("devices", "devices.clear_queue", "Cleared the device command queue");
   }
   if (/^\/api\/sms$/.test(path)) {
-    return rule("devices", "devices.sms", "Sent a notice to the device");
+    return rule("devices", "devices.sms", "Sent a device notice");
   }
   if (/^\/api\/users\/[^/]+$/.test(path) && verb === "PATCH") {
     return rule("users", "users.update", "Updated a user account");

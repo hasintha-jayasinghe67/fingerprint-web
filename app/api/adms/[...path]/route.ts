@@ -9,6 +9,9 @@ import { enrichAuditSummary } from "@/lib/auditDetail";
 import { requireCaller } from "@/lib/requireCaller";
 import { sanitizeData, sanitizeSearch, sanitizeText } from "@/lib/sanitize";
 
+/** SMS notice sends can wait for the device's next poll + ACK (~20–60s). */
+export const maxDuration = 60;
+
 type RouteContext = { params: Promise<{ path: string[] }> };
 
 function sanitizeJsonBody(raw: string): string {

@@ -394,5 +394,94 @@ function describe(
     return who ? `Excused a late sign-in for ${who}` : "Excused a late sign-in";
   }
 
+  if (path === "/api/sms" && verb === "POST") {
+    return describeSmsNotice(request, response);
+  }
+
+  if (path === "/api/devices/clear-command-queue" && verb === "POST") {
+    const cleared = response?.cleared;
+    const devices = Array.isArray(response?.devices)
+      ? response.devices.map((sn) => text(sn)).filter(Boolean)
+      : [];
+    const count =
+      typeof cleared === "number"
+        ? ` (${cleared} pending command${cleared === 1 ? "" : "s"})`
+        : "";
+    const where =
+      devices.length === 1
+        ? ` on device ${devices[0]}`
+        : devices.length > 1
+          ? ` on ${devices.length} devices`
+          : "";
+    return `Cleared the device command queue${count}${where}`;
+  }
+
   return null;
+}
+
+function collectPins(request: Json | null, response: Json | null): string[] {
+  const pinSet = new Set<string>();
+  const add = (value: unknown) => {
+    const pin = text(value);
+    if (pin && pin !== "all") pinSet.add(pin);
+  };
+
+  if (Array.isArray(response?.pins)) {
+    for (const value of response.pins) add(value);
+  }
+  const target = response?.target;
+  if (Array.isArray(target)) {
+    for (const value of target) add(value);
+  } else if (target != null) {
+    add(target);
+  }
+
+  if (pinSet.size === 0) {
+    if (Array.isArray(request?.pins)) {
+      for (const value of request.pins) add(value);
+    }
+    if (request?.pin != null) add(request.pin);
+  }
+
+  return Array.from(pinSet);
+}
+
+function formatDurationMinutes(value: unknown): string {
+  const minutes = Math.floor(Number(value));
+  if (!Number.isFinite(minutes) || minutes < 1) return "";
+  if (minutes % 1440 === 0) {
+    const days = minutes / 1440;
+    return ` for ${days} day${days === 1 ? "" : "s"}`;
+  }
+  if (minutes % 60 === 0) {
+    const hours = minutes / 60;
+    return ` for ${hours} hour${hours === 1 ? "" : "s"}`;
+  }
+  return ` for ${minutes} minute${minutes === 1 ? "" : "s"}`;
+}
+
+function describeSmsNotice(request: Json | null, response: Json | null): string {
+  const message = text(response?.notice) || text(request?.message) || "";
+  const pins = collectPins(request, response);
+  const audience =
+    text(response?.audience) || (pins.length > 0 ? "private" : "public");
+  const duration = formatDurationMinutes(
+    response?.minutes ?? request?.minutes
+  );
+  const device = text(response?.deviceSN);
+  const devicePart = device ? ` on device ${device}` : "";
+  const messagePart = message ? ` ${quote(message)}` : "";
+  const delivery = text(response?.delivery);
+  const deliveryPart =
+    delivery && delivery !== "queued" ? ` [${delivery}]` : "";
+
+  if (audience === "public" || pins.length === 0) {
+    return `Sent public notice${messagePart}${duration}${devicePart}${deliveryPart}`;
+  }
+
+  const listed =
+    pins.length <= 6
+      ? pins.join(", ")
+      : `${pins.slice(0, 6).join(", ")} (+${pins.length - 6} more)`;
+  return `Sent personal notice${messagePart} to PIN ${listed}${duration}${devicePart}${deliveryPart}`;
 }
