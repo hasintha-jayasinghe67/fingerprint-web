@@ -451,8 +451,7 @@ export default function AttendancePage() {
         </div>
 
         {/* Stats */}
-        <div className="mb-8 grid grid-cols-1 sm:grid-cols-[minmax(0,20rem)_minmax(0,24rem)] gap-4">
-          <StatCard label="Number of prefects" value={prefectCount} />
+        <div className="mb-8 max-w-md">
           <PresenceDonut present={prefectCount} total={totalPrefects} />
         </div>
 
@@ -828,19 +827,6 @@ export default function AttendancePage() {
 }
 
 // -------------------------------------------------------
-// Stat Card Component
-// -------------------------------------------------------
-
-function StatCard({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm">
-      <span className="text-xs text-slate-500">{label}</span>
-      <p className="text-2xl font-semibold text-slate-900 mt-1">{value}</p>
-    </div>
-  );
-}
-
-// -------------------------------------------------------
 // Presence Donut (present today vs. total prefects)
 // -------------------------------------------------------
 
@@ -882,7 +868,7 @@ function PresenceDonut({ present, total }: { present: number; total: number }) {
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="#8f5413"
+          stroke="#032b6a"
           strokeWidth={stroke}
           strokeLinecap={dash > 0 && dash < circumference ? "round" : "butt"}
           strokeDasharray={`${dash} ${circumference - dash}`}
@@ -891,21 +877,36 @@ function PresenceDonut({ present, total }: { present: number; total: number }) {
       </svg>
       <div className="min-w-0">
         <span className="text-xs text-slate-500">Present today</span>
-        <p className="text-2xl font-semibold text-slate-900 mt-1 leading-none">
+        {/* text-2xl (1.5rem) → +5% */}
+        <p className="text-[1.575rem] font-bold text-slate-900 mt-1 leading-none tabular-nums">
           {percent}%
         </p>
-        <p className="text-sm text-slate-600 mt-1.5">
-          <span className="font-medium text-slate-900">{safePresent}</span> of{" "}
-          <span className="font-medium text-slate-900">{safeTotal}</span> prefects
+        {/* text-sm (0.875rem) → +5% */}
+        <p className="text-[0.92rem] text-slate-700 mt-1.5 tabular-nums">
+          <span className="font-bold text-slate-900">{safePresent}</span>
+          <span className="text-slate-500"> of </span>
+          <span className="font-bold text-slate-900">{safeTotal}</span>
+          <span className="text-slate-600"> prefects</span>
         </p>
-        <div className="flex items-center gap-3 mt-2 text-xs text-slate-500">
+        {/* text-xs (0.75rem) → +5% */}
+        <div className="flex items-center gap-3 mt-2 text-[0.7875rem] text-slate-700">
           <span className="inline-flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-brand-700" />
-            Present {safePresent}
+            <span>
+              Present{" "}
+              <span className="font-bold text-slate-900 tabular-nums">
+                {safePresent}
+              </span>
+            </span>
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-slate-200" />
-            Not yet {absent}
+            <span className="w-2 h-2 rounded-full bg-slate-300" />
+            <span>
+              Not yet{" "}
+              <span className="font-bold text-slate-900 tabular-nums">
+                {absent}
+              </span>
+            </span>
           </span>
         </div>
       </div>

@@ -3,29 +3,29 @@
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/AuthContext";
-import MobileBottomNav from "@/components/MobileBottomNav";
+import AppSidebar from "@/components/AppSidebar";
+import { SidebarProvider } from "@/components/SidebarContext";
 
 /**
- * App shell chrome: mounts the phone bottom tab bar when signed in, and
- * reserves space under page content so the bar does not cover the ledger.
+ * App shell: college sidebar (rail on lg+, drawer on phones) plus page content.
  */
 export default function AppChrome({ children }: { children: ReactNode }) {
   const { authenticated } = useAuth();
   const pathname = usePathname() || "/";
-  const showBottomNav = authenticated && pathname !== "/login";
+  const showSidebar = authenticated && pathname !== "/login";
 
   return (
-    <>
+    <SidebarProvider>
+      {showSidebar ? <AppSidebar /> : null}
       <div
         className={
-          showBottomNav
-            ? "flex-1 flex flex-col pb-[calc(3.75rem+env(safe-area-inset-bottom,0px))] md:pb-0"
-            : "flex-1 flex flex-col"
+          showSidebar
+            ? "flex-1 flex flex-col min-w-0 lg:pl-64"
+            : "flex-1 flex flex-col min-w-0"
         }
       >
         {children}
       </div>
-      {showBottomNav ? <MobileBottomNav /> : null}
-    </>
+    </SidebarProvider>
   );
 }

@@ -4,43 +4,59 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
- * Design tokens — slate + marigold.
- * Marigold is the action color. Primary fills use brand-700 so white
- * labels clear WCAG AA (6.09:1). brand-600 is too light for white text.
- * Everything else is neutral slate on a flat paper background.
- *
- * Dark mode remaps the same tokens: night paper, light ink, marigold
- * unchanged on buttons. Washes deepen; caption text lifts so facts
- * stay readable on the dark sheet.
+ * Design tokens — S. Thomas' College Mount Lavinia.
+ * Official college colours are dark blue and black. A lighter sky accent
+ * marks active navigation so it stays distinct from navy action fills.
+ * Primary fills use brand-700 so white labels clear WCAG AA.
  */
 :root {
-  --paper: #f2f3f1;
-  --ink: #1b1e1d;
-  --action: #8f5413;
-  --action-hover: #744314;
+  --paper: #f2f4f7;
+  --ink: #0b1220;
+  --action: #032b6a;
+  --action-hover: #021f4d;
+  --sidebar: #021833;
+  --sidebar-hover: #032b6a;
+  --sidebar-active: #0a3a7a;
+  --sidebar-ink: #e8eef6;
+  --sidebar-muted: #9db0c9;
+  /* Sky accent — lighter/cooler than navy brand-700 */
+  --accent: #3d8fd1;
+  --scrollbar-size: 10px;
+  --scrollbar-thumb: #7a93b3;
+  --scrollbar-thumb-hover: #032b6a;
+  --scrollbar-track: color-mix(in oklab, var(--paper) 88%, #032b6a 12%);
 }
 
 html.dark {
   color-scheme: dark;
-  --paper: #141615;
-  --ink: #e8e6e0;
-  --action: #e2b15a;
-  --action-hover: #c9963d;
+  --paper: #0c1018;
+  --ink: #e8eef6;
+  --action: #5b8fd4;
+  --action-hover: #7aa6e0;
+  --sidebar: #060a12;
+  --sidebar-hover: #121a28;
+  --sidebar-active: #1a2740;
+  --sidebar-ink: #e8eef6;
+  --sidebar-muted: #8fa3bc;
+  --accent: #6eb6e8;
+  --scrollbar-thumb: #4a5f7a;
+  --scrollbar-thumb-hover: #6eb6e8;
+  --scrollbar-track: color-mix(in oklab, var(--paper) 85%, #5b8fd4 15%);
 
   /* Sheets. text-white is restored below so button labels stay white. */
-  --color-white: #1c201e;
+  --color-white: #141a24;
 
-  --color-slate-50: #222624;
-  --color-slate-100: #2a302c;
-  --color-slate-200: #3a403c;
-  --color-slate-300: #515853;
-  --color-slate-400: #8e968f;
-  --color-slate-500: #a7aea8;
-  --color-slate-600: #c3c8c1;
-  --color-slate-700: #d6dad3;
+  --color-slate-50: #161c28;
+  --color-slate-100: #1c2433;
+  --color-slate-200: #2a3448;
+  --color-slate-300: #3d4a63;
+  --color-slate-400: #7a8aa3;
+  --color-slate-500: #97a5ba;
+  --color-slate-600: #b4bfcf;
+  --color-slate-700: #cdd5e1;
   /* 800/900 stay control fills (Refresh, selected tabs). Text is overridden. */
-  --color-slate-800: #2e3431;
-  --color-slate-900: #191d1b;
+  --color-slate-800: #243044;
+  --color-slate-900: #101622;
 
   --color-red-50: #2a1718;
   --color-red-100: #3a1d1f;
@@ -69,11 +85,11 @@ html.dark {
   --color-rose-100: #3d1c2c;
   --color-rose-200: #5c2a40;
 
-  --color-brand-50: #2a2114;
-  --color-brand-100: #3a2c16;
-  --color-brand-200: #5c4520;
-  --color-brand-300: #7a5a28;
-  --color-brand-400: #e2b15a;
+  --color-brand-50: #121c30;
+  --color-brand-100: #182640;
+  --color-brand-200: #243860;
+  --color-brand-300: #3a5a90;
+  --color-brand-400: #5b8fd4;
 }
 
 @theme inline {
@@ -81,17 +97,24 @@ html.dark {
   --color-ink: var(--ink);
   --color-action: var(--action);
   --color-action-hover: var(--action-hover);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-hover: var(--sidebar-hover);
+  --color-sidebar-active: var(--sidebar-active);
+  --color-sidebar-ink: var(--sidebar-ink);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --color-accent: var(--accent);
 
-  --color-brand-50: #fbf5ea;
-  --color-brand-100: #f6e8cc;
-  --color-brand-200: #eed39d;
-  --color-brand-300: #e6b964;
-  --color-brand-400: #dfa23c;
-  --color-brand-500: #d98a1f;
-  --color-brand-600: #b56d15;
-  --color-brand-700: #8f5413;
-  --color-brand-800: #744314;
-  --color-brand-900: #613913;
+  /* College blue scale (brandfetch #032B6A as 700) */
+  --color-brand-50: #eef3f9;
+  --color-brand-100: #d9e4f2;
+  --color-brand-200: #b3c9e4;
+  --color-brand-300: #7fa4cf;
+  --color-brand-400: #4c7bb3;
+  --color-brand-500: #2a5a96;
+  --color-brand-600: #1a4480;
+  --color-brand-700: #032b6a;
+  --color-brand-800: #021f4d;
+  --color-brand-900: #011433;
 
   --font-sans: var(--font-archivo);
   --font-mono: var(--font-plex-mono);
@@ -110,13 +133,13 @@ body {
 }
 
 ::selection {
-  background: #eed39d;
+  background: #b3c9e4;
   color: var(--ink);
 }
 
 html.dark ::selection {
-  background: #5c4318;
-  color: #f6e8cc;
+  background: #243860;
+  color: #d9e4f2;
 }
 
 /*
@@ -225,45 +248,54 @@ html.dark .text-rose-700 {
 /* Brand fills are inlined hex, so the night washes are set here. */
 html.dark .bg-brand-50,
 html.dark .hover\:bg-brand-50:hover {
-  background-color: #2a2114;
+  background-color: #121c30;
 }
 
 html.dark .bg-brand-50\/60 {
-  background-color: color-mix(in oklab, #2a2114 60%, transparent);
+  background-color: color-mix(in oklab, #121c30 60%, transparent);
 }
 
 html.dark .bg-brand-100 {
-  background-color: #3a2c16;
+  background-color: #182640;
 }
 
 html.dark .border-brand-200 {
-  border-color: #5c4520;
+  border-color: #243860;
 }
 
 html.dark .border-brand-300 {
-  border-color: #7a5a28;
+  border-color: #3a5a90;
 }
 
 html.dark .focus\:border-brand-400:focus {
-  border-color: #e2b15a;
+  border-color: #5b8fd4;
 }
 
 html.dark .text-brand-700,
 html.dark .group:hover .group-hover\:text-brand-700 {
-  color: #e2b15a;
+  color: #7aa6e0;
 }
 
 html.dark .text-brand-800,
 html.dark .group:hover .group-hover\:text-brand-800 {
-  color: #f0cf8a;
+  color: #a8c4ea;
 }
 
 html.dark .text-brand-900 {
-  color: #f6e3b0;
+  color: #d9e4f2;
 }
 
 html.dark .border-brand-700 {
-  border-color: #e2b15a;
+  border-color: #5b8fd4;
+}
+
+html.dark .bg-brand-700,
+html.dark .hover\:bg-brand-800:hover {
+  background-color: #2a5a96;
+}
+
+html.dark .hover\:bg-brand-800:hover {
+  background-color: #1a4480;
 }
 
 /* Spinners keep one transparent edge after the border-color overrides above. */
@@ -283,8 +315,40 @@ textarea {
   font-size: 1rem;
 }
 
-html {
-  scrollbar-color: #64748b var(--paper);
+/*
+ * Scrollbars — thin college-blue thumbs on the paper track.
+ * Firefox uses scrollbar-*; Chromium/Safari use ::-webkit-scrollbar.
+ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: 9999px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 9999px;
+  border: 2px solid var(--scrollbar-track);
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  border: 2px solid var(--scrollbar-track);
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 /* Row hover is a color change, not motion. */
@@ -299,5 +363,9 @@ tr {
 
   tr {
     transition: none;
+  }
+
+  .sidebar-panel {
+    transition: none !important;
   }
 }

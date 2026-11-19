@@ -57,7 +57,9 @@ export default function LoginPage() {
             <h1 className="text-xl font-semibold tracking-tight text-slate-900">
               House Prefect Affairs
             </h1>
-            <p className="text-sm text-slate-500 mt-1">Sign in to continue</p>
+            <p className="text-sm text-slate-500 mt-1">
+              S. Thomas&apos; College, Mount Lavinia
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="px-8 py-6 space-y-5">

@@ -229,3 +229,35 @@ export function IconGate({ className = "w-5 h-5" }: IconProps) {
     </svg>
   );
 }
+
+export function IconClipboard({ className = "w-5 h-5" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={`${base} ${className}`} aria-hidden="true">
+      <path d="M9 4h6a2 2 0 0 1 2 2v1H7V6a2 2 0 0 1 2-2z" />
+      <rect x="5" y="7" width="14" height="14" rx="2" />
+      <path d="M9 12h6" />
+      <path d="M9 16h4" />
+    </svg>
+  );
+}
+
+export function IconTie({ className = "w-5 h-5" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={`${base} ${className}`} aria-hidden="true">
+      <path d="M10 3h4l1.5 3-3.5 2L8.5 6 10 3z" />
+      <path d="M12 8v13" />
+      <path d="m9 21 3-5 3 5H9z" />
+    </svg>
+  );
+}
+
+export function IconUsers({ className = "w-5 h-5" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={`${base} ${className}`} aria-hidden="true">
+      <circle cx="9" cy="8" r="3" />
+      <path d="M3 19a6 6 0 0 1 12 0" />
+      <circle cx="17" cy="9" r="2.25" />
+      <path d="M15.5 19a4.5 4.5 0 0 1 5.5-4.25" />
+    </svg>
+  );
+}

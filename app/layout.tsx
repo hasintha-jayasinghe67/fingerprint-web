@@ -27,8 +27,9 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "House Prefect Affairs",
-  description: "House prefect attendance management system",
+  title: "House Prefect Affairs | S. Thomas' College Mount Lavinia",
+  description:
+    "House prefect attendance for S. Thomas' College, Mount Lavinia",
   icons: {
     icon: [{ url: "/ICON.jpeg", type: "image/jpeg" }],
     apple: [{ url: "/ICON.jpeg", type: "image/jpeg" }],

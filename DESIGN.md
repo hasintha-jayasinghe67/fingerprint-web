@@ -1,16 +1,18 @@
 ---
 name: House Prefect Affairs
-description: A flat paper ledger for house-prefect attendance, with marigold reserved for the action you take.
+description: House-prefect attendance for S. Thomas' College Mount Lavinia — college dark blue and black, with a lighter sky accent for active navigation.
 colors:
-  paper: "#f2f3f1"
-  ink: "#1b1e1d"
-  action: "#8f5413"
-  action-hover: "#744314"
-  marigold-100: "#f6e8cc"
-  marigold-200: "#eed39d"
-  marigold-700: "#8f5413"
-  marigold-800: "#744314"
-  marigold-900: "#613913"
+  paper: "#f2f4f7"
+  ink: "#0b1220"
+  action: "#032b6a"
+  action-hover: "#021f4d"
+  sidebar: "#021833"
+  sidebar-ink: "#e8eef6"
+  accent: "#3d8fd1"
+  brand-50: "#eef3f9"
+  brand-700: "#032b6a"
+  brand-800: "#021f4d"
+  brand-900: "#011433"
   surface: "#ffffff"
   slate-600: "#475569"
   slate-700: "#334155"
@@ -124,30 +126,31 @@ components:
 
 **Creative North Star: "The Duty Ledger"**
 
-House Prefect Affairs is the book the house opens every morning. The page is cool paper, the record is ink, and marigold appears only when someone has to act: sign in, save attendance, add a prefect. Density is operational. A screen is a table, a short set of tabs, and one primary button, not a marketing composition.
+House Prefect Affairs is the duty book for S. Thomas' College, Mount Lavinia. The page is cool paper, the record is ink, and college dark blue marks the action you take. Density is operational. A screen is a table, a short set of tabs, and one primary button, not a marketing composition.
 
-The system was taken from the incumbent implementation: Archivo for the interface, IBM Plex Mono for PINs, times, and codes, slate for structure, and the marigold ramp for the single accent. This pass darkened the action fill so white labels clear WCAG AA, and it set 12px as the smallest text.
+Official college colours are dark blue and black; a lighter sky accent marks the active sidebar item. Archivo for the interface, IBM Plex Mono for PINs, times, and codes. Primary fills use college blue (`#032b6a`) so white labels clear WCAG AA.
 
 **Key Characteristics:**
 
 - Flat paper, white sheets, hairline rules
-- One accent, used on the action and on the active tab underline
+- College-blue sidebar with every destination listed
 - Status is a word plus a tint, never a color alone
 - Mono is for data, not for decoration
 - Touch targets on phones are at least 44px; desktop headers may sit slightly tighter
 
 ## Colors
 
-The palette is cool paper and ink, with a single warm accent.
+The palette is cool paper and ink, with Thomian dark blue as the action colour.
 
 ### Primary
 
-- **Marigold ink** (`action`, `#8f5413`): the primary button fill and the keyboard focus outline. White on this color is 6.09:1. The hover step is **pressed marigold** (`action-hover`, `#744314`).
-- **Marigold wash** (`marigold-200`, `#eed39d`): text selection. **Marigold paper** (`marigold-100`) tints the active gate-duty tab.
+- **College blue** (`action` / `brand-700`, `#032b6a`): primary button fill and keyboard focus. White on this color clears AA. Hover is **pressed blue** (`action-hover`, `#021f4d`).
+- **Sky accent** (`accent`, `#3d8fd1`): active sidebar rail and icon — cooler and lighter than navy action fills.
+- **Sidebar night** (`sidebar`, `#021833`): the navigation rail and mobile drawer.
 
 ### Neutral
 
-- **Paper** (`paper`, `#f2f3f1`): the page. **Ink** (`ink`, `#1b1e1d`): body color on that page.
+- **Paper** (`paper`, `#f2f4f7`): the page. **Ink** (`ink`, `#0b1220`): body color on that page.
 - **Sheet** (`surface`, `#ffffff`): cards, the header, dialogs, and fields.
 - **Record** (`slate-800`): secondary buttons such as Refresh, and the selected attendance tab.
 - **Caption** (`slate-600`, `#475569`): PINs, class, helper lines, and placeholders. This is the lightest neutral allowed for text that carries a fact (7.58:1 on white).
@@ -165,7 +168,7 @@ Gate and attendance states keep their words. The tint only reinforces the word.
 - Traitor uses rose
 - Suspended uses violet
 
-**The One Action Rule.** Marigold fills a control the person is about to press. It does not fill cards, page backgrounds, or large decorative regions.
+**The One Action Rule.** College blue fills a control the person is about to press. It does not fill cards, page backgrounds, or large decorative regions.
 
 **The Readable Record Rule.** Any fact a prefect's name depends on (PIN, class, code, time) uses caption slate or darker. Disabled controls may be lighter; they are the exception.
 
@@ -214,17 +217,17 @@ Depth is a sheet on paper. Surfaces are white with a 1px slate rule. A resting c
 
 Corners are slightly rounded and consistent. Controls and fields use 6px. Sheets and dialogs use 8px. Status chips and the small avatar are fully round. The active gate-duty tab is square on the bottom, where a 2px underline marks the selection, and rounded only on the top.
 
-Focus is a 2px marigold outline, offset 2px, drawn on the page around the control. It replaces the faint translucent ring.
+Focus is a 2px college-blue outline, offset 2px, drawn on the page around the control. It replaces the faint translucent ring.
 
 ## Components
 
 ### Buttons
 
 - **Shape:** gently rounded (6px), at least 44px tall on touch widths.
-- **Primary:** marigold ink fill, white label, hover pressed marigold.
+- **Primary:** college-blue fill, white label, hover pressed blue.
 - **Secondary:** white or slate-100 fill, slate label, 1px rule.
 - **Destructive:** red wash, red-700 label, 1px red rule, and a name in the accessible label ("Delete {name}").
-- **Focus:** the shared marigold outline.
+- **Focus:** the shared college-blue outline.
 
 ### Chips
 
@@ -242,13 +245,13 @@ Focus is a 2px marigold outline, offset 2px, drawn on the page around the contro
 ### Inputs / Fields
 
 - **Style:** white, 1px field stroke, 6px corners, 16px type.
-- **Focus:** marigold outline and marigold border.
+- **Focus:** college-blue outline and border.
 - **Error:** a red wash banner with `role="alert"`, tied to the field with `aria-describedby` on the sign-in form.
 - **Disabled:** slate wash, muted text, not the primary color.
 
 ### Navigation
 
-The sticky header carries the mark, the page title, a back control when the page is nested, and page actions. On desktop, destinations live in a shared **Navigate** disclosure; the account disclosure holds Users, password, and log out. On a phone (below 768px), primary destinations move to a fixed bottom tab bar — Home, Attendance, Prefects, Batches, and **More** — in the Instagram / WhatsApp pattern: equal tabs, icon + short label, marigold underline on the active tab. Secondary destinations (Gate Sheet, Tie Duties, Excuses, Suspensions, Settings) open from More as a paper sheet above the bar. Page-specific actions (Save, Add) stay in the header, collapsed behind the overflow control when needed. The selected attendance tab sets `aria-pressed`.
+Destinations live in a **college-blue sidebar** grouped as Overview, Attendance, People, and Admin. From `lg` up the rail is fixed; below that a header menu button opens the same list as a slide-over drawer with a dimmed backdrop. Every link is visible — there is no nested “More” menu. The sticky header keeps the page title, back control, page actions, account menu, and theme toggle. Active sidebar items use a sky-blue inset rail. The selected attendance tab sets `aria-pressed`.
 
 ### Dialog
 
@@ -258,17 +261,17 @@ Dialogs use the native `dialog` element. Escape, the backdrop, and the close but
 
 ### Do:
 
-- **Do** use marigold ink (`#8f5413`) for a primary button that carries white text.
+- **Do** use college blue (`#032b6a`) for a primary button that carries white text.
 - **Do** put PINs, class, and codes in caption slate (`#475569`) or darker, at 12px or larger.
 - **Do** keep status as a word on a tinted chip.
 - **Do** use IBM Plex Mono for device data and codes.
-- **Do** scroll a long tab row instead of crushing the labels.
+- **Do** list every destination in the sidebar so nothing hides behind “More”.
 
 ### Don't:
 
-- **Don't** put white text on the lighter marigold (`#b56d15`). It fails 4.5:1.
+- **Don't** put white text on mid blue (`brand-500`). Prefer `brand-700` or darker.
 - **Don't** use type smaller than 12px for a badge, count, or caption.
 - **Don't** build a second dialog out of a fixed overlay. Use the shared dialog.
 - **Don't** name a delete control with only "×" or an unlabeled icon.
-- **Don't** spend marigold on decoration. One action per region.
+- **Don't** spend college blue or sky accent on decoration. One action per region.
 ---

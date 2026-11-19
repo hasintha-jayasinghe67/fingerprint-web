@@ -6,7 +6,6 @@ import Link from "next/link";
 import Image from "next/image";
 import type { ReactNode } from "react";
 import { useAuth, isAdminOrAbove, isSuperuser } from "@/lib/AuthContext";
-import { DESKTOP_NAV } from "@/lib/nav";
 import ChangePasswordModal from "@/components/ChangePasswordModal";
 import HeaderMenu, {
   HeaderMenuLayoutContext,
@@ -16,10 +15,9 @@ import {
   IconMenu,
   IconClose,
   IconArrowLeft,
-  IconSettings,
-  IconLogs,
 } from "@/components/icons";
 import ThemeToggle from "@/components/ThemeToggle";
+import { useSidebar } from "@/components/SidebarContext";
 
 interface SiteHeaderProps {
   title: string;
@@ -27,26 +25,22 @@ interface SiteHeaderProps {
   /** Route for the back button. Pass "back" to use the browser's history. */
   backTo?: string | "back";
   /**
-   * Page-specific controls (Save, Add, Refresh…). Destination links live in
-   * the shared Navigate menu (desktop) and the phone bottom tab bar.
+   * Page-specific controls (Save, Add, Refresh…). Destinations live in the sidebar.
    */
   actions?: ReactNode;
   /**
    * "menu" collapses actions behind a hamburger on phones (default).
    * "wrap" keeps them inline on phones — use for one essential CTA.
-   * On md+ the header always collapses to the hamburger when the full
-   * control row no longer fits on one line, regardless of this flag.
+   * On md+ the header collapses to the overflow menu when controls no longer fit.
    */
   actionsLayout?: "menu" | "wrap";
-  /** When false, omit the shared Navigate disclosure (rare). */
+  /** @deprecated Navigate lives in the sidebar; ignored. */
   showNavigate?: boolean;
   maxWidth?: "3xl" | "5xl" | "7xl";
 }
 
-/** Logo + gaps + enough title that the page name still reads. */
-const MIN_BRAND_PX = 220;
+const MIN_BRAND_PX = 180;
 const HEADER_GAP_PX = 12;
-/** Always-visible theme icon, plus the gap before it. */
 const THEME_TOGGLE_PX = 44 + 8;
 
 export default function SiteHeader({
@@ -55,11 +49,11 @@ export default function SiteHeader({
   backTo,
   actions,
   actionsLayout = "menu",
-  showNavigate = true,
   maxWidth = "7xl",
 }: SiteHeaderProps) {
   const router = useRouter();
   const { user, logout } = useAuth();
+  const { openSidebar } = useSidebar();
   const [menuOpen, setMenuOpen] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [overflows, setOverflows] = useState(false);
@@ -75,32 +69,6 @@ export default function SiteHeader({
     await logout();
     router.push("/login");
   };
-
-  const navigateMenu = showNavigate ? (
-    <HeaderMenu label="Navigate">
-      {DESKTOP_NAV.filter((item) => {
-        if (item.superuserOnly) return superuser;
-        if (item.adminOnly) return canWrite;
-        return true;
-      }).map((item) => (
-        <Link key={item.href} href={item.href} className={headerMenuItemClass}>
-          {item.href === "/settings" ? (
-            <>
-              <IconSettings className="w-3 h-3" />
-              {item.label}
-            </>
-          ) : item.href === "/logs" ? (
-            <>
-              <IconLogs className="w-3 h-3" />
-              {item.label}
-            </>
-          ) : (
-            item.label
-          )}
-        </Link>
-      ))}
-    </HeaderMenu>
-  ) : null;
 
   const accountMenu = (
     <HeaderMenu label={user?.username ?? "Account"}>
@@ -168,7 +136,6 @@ export default function SiteHeader({
 
   const desktopControls = (
     <>
-      {navigateMenu}
       {actions}
       {accountMenu}
     </>
@@ -205,7 +172,7 @@ export default function SiteHeader({
     ro.observe(measure);
     update();
     return () => ro.disconnect();
-  }, [isMd, backTo, actions, user, showNavigate, canWrite, superuser]);
+  }, [isMd, backTo, actions, user, canWrite, superuser]);
 
   useEffect(() => {
     if (!overflows) setMenuOpen(false);
@@ -242,22 +209,31 @@ export default function SiteHeader({
         ? "max-w-5xl"
         : "max-w-7xl";
 
-  const showPhoneHamburger = actionsLayout === "menu" && Boolean(actions);
+  const showPhoneActionsMenu = actionsLayout === "menu" && Boolean(actions);
   const showDesktopHamburger = overflows;
-  const showHamburger = showPhoneHamburger || showDesktopHamburger;
+  const showActionsHamburger = showPhoneActionsMenu || showDesktopHamburger;
 
-  const hamburgerVisibility = showDesktopHamburger
-    ? showPhoneHamburger
+  const actionsHamburgerVisibility = showDesktopHamburger
+    ? showPhoneActionsMenu
       ? "relative shrink-0"
       : "relative shrink-0 hidden md:block"
     : "relative shrink-0 md:hidden";
 
   const brand = (
     <>
+      <button
+        type="button"
+        onClick={openSidebar}
+        aria-label="Open navigation"
+        aria-controls="app-sidebar-drawer"
+        className="lg:hidden min-h-11 min-w-11 shrink-0 rounded-md bg-brand-700 text-white hover:bg-brand-800 flex items-center justify-center transition-colors"
+      >
+        <IconMenu className="w-5 h-5" />
+      </button>
       <Link
         href="/"
         aria-label="House Prefect Affairs home"
-        className="w-9 h-9 sm:w-11 sm:h-11 shrink-0 rounded-md overflow-hidden ring-1 ring-slate-200 hover:ring-slate-300 transition-shadow"
+        className="hidden sm:block w-9 h-9 sm:w-11 sm:h-11 shrink-0 rounded-md overflow-hidden ring-1 ring-slate-200 hover:ring-slate-300 transition-shadow lg:hidden"
       >
         <Image
           src="/ICON.jpeg"
@@ -307,7 +283,6 @@ export default function SiteHeader({
               {brand}
             </div>
 
-            {/* Natural width of the full desktop control row — not displayed. */}
             <div
               aria-hidden="true"
               inert
@@ -342,13 +317,13 @@ export default function SiteHeader({
                 <div className="md:hidden flex items-center">{accountMenu}</div>
               )}
 
-              {showHamburger && (
-                <div className={hamburgerVisibility}>
+              {showActionsHamburger && (
+                <div className={actionsHamburgerVisibility}>
                   <button
                     ref={buttonRef}
                     type="button"
                     onClick={() => setMenuOpen((v) => !v)}
-                    aria-label="Toggle menu"
+                    aria-label="Toggle page actions"
                     aria-expanded={menuOpen}
                     className="min-h-11 min-w-11 rounded-md bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 transition-colors"
                   >
@@ -373,7 +348,6 @@ export default function SiteHeader({
                       className="absolute right-0 top-full mt-2 z-30 w-[min(18rem,calc(100vw-1.5rem))] max-h-[70vh] overflow-y-auto rounded-lg border border-slate-200 bg-white p-2 shadow-lg flex flex-col gap-1.5 [&>*]:w-full [&>*]:justify-center"
                     >
                       <HeaderMenuLayoutContext.Provider value="inline">
-                        {showDesktopHamburger ? navigateMenu : null}
                         {actions}
                         {accountControlsFlat}
                       </HeaderMenuLayoutContext.Provider>
